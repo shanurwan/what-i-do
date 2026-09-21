@@ -1,0 +1,29 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { withBase } from '../utils/paths';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+  index: number;
+}
+
+const { project, index } = Astro.props;
+const { title, slug, summary, status, year, areas } = project.data;
+---
+
+<article class="project-card">
+  <span class="project-card__number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+  <div>
+    <ul class="project-card__meta" aria-label="Project metadata">
+      <li>{status}</li>
+      {year && <li>{year}</li>}
+    </ul>
+    <h3><a href={withBase(`projects/${slug}/`)}>{title}</a></h3>
+    <p class="project-card__summary">{summary}</p>
+    {areas.length > 0 && (
+      <ul class="tag-list" aria-label="Project areas">
+        {areas.slice(0, 4).map((area) => <li>{area}</li>)}
+      </ul>
+    )}
+  </div>
+</article>

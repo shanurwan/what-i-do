@@ -1,0 +1,141 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects');
+  return projects.map((project) => ({
+    params: { slug: project.data.slug },
+    props: { project },
+  }));
+}
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+
+const { project } = Astro.props;
+const {
+  title,
+  summary,
+  status,
+  repository,
+  year,
+  areas,
+  problem,
+  context,
+  constraints,
+  architecture,
+  decisions,
+  failureModes,
+  evidence,
+  lessons,
+  currentStatus,
+  links,
+} = project.data;
+---
+
+<BaseLayout title={title} description={summary}>
+  <div class="shell">
+    <header class="page-header project-header">
+      <div>
+        <p class="eyebrow">Engineering case study</p>
+        <h1>{title}</h1>
+        <p class="page-header__lede">{summary}</p>
+      </div>
+      <dl class="project-facts">
+        <div><dt>Status</dt><dd>{status}</dd></div>
+        {year && <div><dt>Year</dt><dd>{year}</dd></div>}
+        {areas.length > 0 && <div><dt>Areas</dt><dd>{areas.join(', ')}</dd></div>}
+      </dl>
+    </header>
+
+    <article class="case-study">
+      {(problem || context) && (
+        <section class="case-section">
+          <h2>Problem</h2>
+          <div class="case-section__body">
+            {problem && <p>{problem}</p>}
+            {context && <p>{context}</p>}
+          </div>
+        </section>
+      )}
+
+      {constraints && constraints.length > 0 && (
+        <section class="case-section">
+          <h2>Constraints</h2>
+          <div class="case-section__body">
+            <ul class="case-list">{constraints.map((constraint) => <li>{constraint}</li>)}</ul>
+          </div>
+        </section>
+      )}
+
+      {architecture && (
+        <section class="case-section">
+          <h2>Architecture</h2>
+          <div class="case-section__body"><p>{architecture}</p></div>
+        </section>
+      )}
+
+      {decisions && decisions.length > 0 && (
+        <section class="case-section">
+          <h2>Engineering decisions</h2>
+          <div class="case-section__body">
+            <ol class="decision-list">
+              {decisions.map((decision) => (
+                <li><h3>{decision.title}</h3><p>{decision.rationale}</p></li>
+              ))}
+            </ol>
+          </div>
+        </section>
+      )}
+
+      {failureModes && failureModes.length > 0 && (
+        <section class="case-section">
+          <h2>Failure modes / invariants</h2>
+          <div class="case-section__body">
+            <ul class="case-list">{failureModes.map((mode) => <li>{mode}</li>)}</ul>
+          </div>
+        </section>
+      )}
+
+      {evidence && evidence.length > 0 && (
+        <section class="case-section">
+          <h2>Evidence</h2>
+          <div class="case-section__body">
+            <ul class="evidence-list">
+              {evidence.map((item) => (
+                <li>
+                  <h3>{item.url ? <a href={item.url}>{item.title}</a> : item.title}</h3>
+                  <p>{item.detail}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
+      {(lessons || currentStatus) && (
+        <section class="case-section">
+          <h2>Learning / current status</h2>
+          <div class="case-section__body">
+            {lessons && <p>{lessons}</p>}
+            {currentStatus && <p>{currentStatus}</p>}
+          </div>
+        </section>
+      )}
+
+      {(repository || (links && links.length > 0)) && (
+        <section class="case-section">
+          <h2>Links</h2>
+          <div class="case-section__body">
+            {repository && <a class="repository-link" href={repository}>View repository <span aria-hidden="true">↗</span></a>}
+            {links && links.map((link) => (
+              <div><a class="repository-link" href={link.url}>{link.label} <span aria-hidden="true">↗</span></a></div>
+            ))}
+          </div>
+        </section>
+      )}
+    </article>
+  </div>
+</BaseLayout>

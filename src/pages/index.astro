@@ -1,0 +1,85 @@
+---
+import { getCollection } from 'astro:content';
+import ProjectCard from '../components/ProjectCard.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import WritingItem from '../components/WritingItem.astro';
+import { profile } from '../config/profile';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { withBase } from '../utils/paths';
+
+const projects = (await getCollection('projects'))
+  .filter(({ data }) => data.featured)
+  .sort((a, b) => a.data.order - b.data.order);
+const articles = (await getCollection('writing', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf())
+  .slice(0, 3);
+---
+
+<BaseLayout description="Infrastructure and systems engineering across reliability, security, AI infrastructure, Linux, and distributed systems.">
+  <div class="shell">
+    <section class="hero" aria-labelledby="hero-title">
+      <div>
+        <h1 id="hero-title">I build and investigate infrastructure at its reliability and security boundaries.</h1>
+        <p class="hero__lede">
+          My work spans production infrastructure and independent systems engineering across AI infrastructure,
+          distributed systems, Linux, reliability, and security.
+        </p>
+      </div>
+      <div class="hero__aside" aria-label="Focus areas">
+        <span>Systems behaviour</span>
+        <span>Execution boundaries</span>
+        <span>Failure and recovery</span>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="work-heading">
+      <SectionHeading
+        id="work-heading"
+        label="01 / Selected work"
+        title="Systems built to make difficult infrastructure behaviour inspectable."
+        description="Case studies emphasise constraints, decisions, failure modes, and evidence—not product claims."
+      />
+      <div class="project-grid">
+        {projects.map((project, index) => <ProjectCard project={project} index={index} />)}
+      </div>
+      <a class="section-action" href={withBase('projects/')}>View all projects →</a>
+    </section>
+
+    <section class="section" aria-labelledby="writing-heading">
+      <SectionHeading
+        id="writing-heading"
+        label="02 / Selected writing"
+        title="Notes on authorization, isolation, reliability, and recovery."
+      />
+      {articles.length > 0 ? (
+        <ul class="writing-list">
+          {articles.map((article) => <WritingItem article={article} />)}
+        </ul>
+      ) : (
+        <p class="empty-state">No public articles yet. Drafts remain local until they are ready to publish.</p>
+      )}
+      <a class="section-action" href={withBase('writing/')}>Writing archive →</a>
+    </section>
+
+    <section class="section" aria-labelledby="context-heading">
+      <SectionHeading id="context-heading" label="03 / Context" title="Production practice, tested through deeper systems work." />
+      <div class="context-grid">
+        <div>
+          <p>
+            I work across AI infrastructure, DevOps, infrastructure security, and MLOps integration. That includes
+            Kubernetes and cloud platforms, observability, databases, reliability, and security. Independent projects
+            give me room to examine the boundaries underneath those systems: delegated authority, microVM isolation,
+            temporal behaviour, bare-metal Linux, and recovery.
+          </p>
+        </div>
+        <ul class="context-links" aria-label="Profile links">
+          <li><a href={profile.github} rel="me">GitHub <span aria-hidden="true">↗</span></a></li>
+          {profile.linkedin && <li><a href={profile.linkedin} rel="me">LinkedIn <span aria-hidden="true">↗</span></a></li>}
+          {profile.email && <li><a href={`mailto:${profile.email}`}>Email <span aria-hidden="true">↗</span></a></li>}
+          {profile.resume && <li><a href={profile.resume}>Résumé <span aria-hidden="true">↗</span></a></li>}
+          <li><a href={withBase('about/')}>About <span aria-hidden="true">→</span></a></li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</BaseLayout>

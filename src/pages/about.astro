@@ -1,0 +1,46 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { profile } from '../config/profile';
+---
+
+<BaseLayout title="About" description="Professional background in AI infrastructure, DevOps, infrastructure security, reliability, and systems engineering.">
+  <div class="shell">
+    <header class="page-header">
+      <p class="eyebrow">About / Professional context</p>
+      <h1>Infrastructure practice informed by systems investigation.</h1>
+    </header>
+    <div class="case-study">
+      <section class="case-section">
+        <h2>Work</h2>
+        <div class="case-section__body">
+          <p>
+            I work across AI infrastructure, DevOps, infrastructure security, and MLOps integration. My production
+            work includes Kubernetes infrastructure, cloud platforms, observability, databases, reliability, and
+            security.
+          </p>
+        </div>
+      </section>
+      <section class="case-section">
+        <h2>Independent systems work</h2>
+        <div class="case-section__body">
+          <p>
+            Outside production work, I build systems that let me investigate infrastructure behaviour below the usual
+            abstractions. Current themes include authorization boundaries for autonomous execution, Firecracker/KVM
+            temporal testing, Linux and bare-metal systems, and recovery when normal infrastructure layers are no
+            longer available.
+          </p>
+        </div>
+      </section>
+      <section class="case-section">
+        <h2>Contact</h2>
+        <div class="case-section__body">
+          <p>GitHub is the primary public record of the work documented here.</p>
+          <a class="repository-link" href={profile.github} rel="me">View GitHub profile <span aria-hidden="true">↗</span></a>
+          {profile.linkedin && <div><a class="repository-link" href={profile.linkedin} rel="me">LinkedIn <span aria-hidden="true">↗</span></a></div>}
+          {profile.email && <div><a class="repository-link" href={`mailto:${profile.email}`}>Email <span aria-hidden="true">↗</span></a></div>}
+          {profile.resume && <div><a class="repository-link" href={profile.resume}>Résumé <span aria-hidden="true">↗</span></a></div>}
+        </div>
+      </section>
+    </div>
+  </div>
+</BaseLayout>

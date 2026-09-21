@@ -1,0 +1,70 @@
+---
+import SiteFooter from '../components/SiteFooter.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import { profile } from '../config/profile';
+import { withBase } from '../utils/paths';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description: string;
+  type?: 'website' | 'article';
+  published?: Date;
+  canonicalUrl?: string;
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description,
+  type = 'website',
+  published,
+  canonicalUrl,
+  noindex = false,
+} = Astro.props;
+
+const documentTitle = title
+  ? `${title} — ${profile.displayName}`
+  : `${profile.displayName} — ${profile.descriptor}`;
+const canonical = canonicalUrl ?? new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
+const rssUrl = new URL(withBase('rss.xml'), Astro.site ?? Astro.url.origin).toString();
+const socialImage = new URL(withBase('og-card.png'), Astro.site ?? Astro.url.origin).toString();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#17382d" />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="icon" href={withBase('favicon.svg')} type="image/svg+xml" />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" type="application/rss+xml" title={`${profile.displayName} — Writing`} href={rssUrl} />
+    <meta property="og:site_name" content={profile.displayName} />
+    <meta property="og:title" content={documentTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content={type} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Shanurwan — infrastructure at the reliability and security boundaries" />
+    {published && <meta property="article:published_time" content={published.toISOString()} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={documentTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImage} />
+    <title>{documentTitle}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <SiteHeader />
+    <main id="main-content">
+      <slot />
+    </main>
+    <SiteFooter />
+  </body>
+</html>

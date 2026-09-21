@@ -1,0 +1,28 @@
+---
+import { getCollection } from 'astro:content';
+import ProjectCard from '../../components/ProjectCard.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+---
+
+<BaseLayout
+  title="Work"
+  description="Infrastructure and systems engineering case studies covering authorization, temporal testing, Linux, and recovery."
+>
+  <div class="shell">
+    <header class="page-header">
+      <p class="eyebrow">Work / Engineering case studies</p>
+      <h1>Systems, constraints, and evidence.</h1>
+      <p class="page-header__lede">
+        Projects are documented as engineering work: why each system exists, how it is structured, what can fail,
+        and what the available evidence supports.
+      </p>
+    </header>
+    <section class="section" aria-label="All projects">
+      <div class="project-grid">
+        {projects.map((project, index) => <ProjectCard project={project} index={index} />)}
+      </div>
+    </section>
+  </div>
+</BaseLayout>

@@ -1,0 +1,37 @@
+---
+import { profile } from '../config/profile';
+import { withBase } from '../utils/paths';
+
+const pathname = Astro.url.pathname;
+const navItems = [
+  { label: 'Work', href: withBase('projects/'), path: '/projects/' },
+  { label: 'Writing', href: withBase('writing/'), path: '/writing/' },
+  { label: 'About', href: withBase('about/'), path: '/about/' },
+];
+
+const isCurrent = (path: string) => pathname.includes(path);
+---
+
+<header class="site-header">
+  <div class="site-header__inner shell">
+    <a class="site-brand" href={withBase()} aria-label={`${profile.displayName}, home`}>
+      {profile.displayName.toLowerCase()}
+    </a>
+    <nav class="site-nav" aria-label="Primary navigation">
+      <ul>
+        {navItems.map((item) => (
+          <li>
+            <a href={item.href} aria-current={isCurrent(item.path) ? 'page' : undefined}>
+              {item.label}
+            </a>
+          </li>
+        ))}
+        <li>
+          <a href={profile.github} rel="me">
+            GitHub <span class="external-mark" aria-hidden="true">↗</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>

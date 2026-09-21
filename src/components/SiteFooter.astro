@@ -1,0 +1,12 @@
+---
+import { profile } from '../config/profile';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="site-footer__inner shell">
+    <span>© {year} {profile.displayName}</span>
+    <span>Built as a static Astro site</span>
+  </div>
+</footer>

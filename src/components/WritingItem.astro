@@ -1,0 +1,30 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { withBase } from '../utils/paths';
+
+interface Props {
+  article: CollectionEntry<'writing'>;
+}
+
+const { article } = Astro.props;
+const { title, slug, description, published, tags, draft } = article.data;
+const date = published.toLocaleDateString('en-GB', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+});
+---
+
+<li class="writing-item">
+  <div>
+    <h3>
+      <a href={withBase(`writing/${slug}/`)}>{title}</a>
+      {draft && <span class="draft-label">Draft</span>}
+    </h3>
+    <p>{description}</p>
+  </div>
+  <div class="writing-item__meta">
+    <time datetime={published.toISOString()}>{date}</time>
+    {tags.length > 0 && <div>{tags.join(' · ')}</div>}
+  </div>
+</li>

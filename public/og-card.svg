@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#f3f1ea"/>
+  <rect width="1200" height="12" fill="#1d6148"/>
+  <path d="M80 118h1040" stroke="#aeb8b1" stroke-width="2"/>
+  <rect x="321" y="68" width="16" height="16" fill="#1d6148"/>
+  <text x="80" y="86" fill="#171a18" font-family="Arial, sans-serif" font-size="34" font-weight="700">shanurwan</text>
+  <text x="80" y="225" fill="#171a18" font-family="Arial, sans-serif" font-size="70" font-weight="600" letter-spacing="-2">Infrastructure at the</text>
+  <text x="80" y="305" fill="#171a18" font-family="Arial, sans-serif" font-size="70" font-weight="600" letter-spacing="-2">reliability and security</text>
+  <text x="80" y="385" fill="#171a18" font-family="Arial, sans-serif" font-size="70" font-weight="600" letter-spacing="-2">boundaries.</text>
+  <text x="80" y="475" fill="#59615c" font-family="Arial, sans-serif" font-size="30">AI infrastructure · distributed systems · Linux · recovery</text>
+  <path d="M80 520h1040" stroke="#cbd1cb" stroke-width="2"/>
+  <text x="80" y="575" fill="#59615c" font-family="Consolas, monospace" font-size="22">SHANURWAN.GITHUB.IO/WHAT-I-DO</text>
+</svg>
