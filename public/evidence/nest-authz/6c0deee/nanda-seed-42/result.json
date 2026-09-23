@@ -1,0 +1,75 @@
+{
+  "run_id": "sim-a3f64711badc",
+  "evaluator_version": "lab-0.2.6",
+  "stages": [
+    {
+      "name": "in_scope_delegated_action",
+      "status": "passed",
+      "evidence": [
+        "ev-17",
+        "ev-18"
+      ],
+      "note": "the attenuated subagent authority permits amount 700"
+    },
+    {
+      "name": "out_of_scope_denied",
+      "status": "passed",
+      "evidence": [
+        "ev-21"
+      ],
+      "note": "the attempted scope excess was denied before delivery"
+    },
+    {
+      "name": "approval_flow",
+      "status": "passed",
+      "evidence": [
+        "ev-26",
+        "ev-37"
+      ],
+      "note": "the authorized manager satisfied the exact requirement"
+    },
+    {
+      "name": "unauthorized_approver_rejected",
+      "status": "passed",
+      "evidence": [
+        "ev-31"
+      ],
+      "note": "the unauthorized approver attempt was explicitly rejected"
+    },
+    {
+      "name": "revoked_authority_blocked",
+      "status": "passed",
+      "evidence": [
+        "ev-42"
+      ],
+      "note": "fresh revalidation denied the revoked authority"
+    },
+    {
+      "name": "single_logical_execution",
+      "status": "passed",
+      "evidence": [
+        "ev-46",
+        "ev-51",
+        "ev-59",
+        "ev-63"
+      ],
+      "note": "one permit produced one logical execution despite replay"
+    },
+    {
+      "name": "ledger_conserved",
+      "status": "passed",
+      "evidence": [
+        "ev-65"
+      ],
+      "note": "complete run recorded no money moved"
+    },
+    {
+      "name": "privacy",
+      "status": "not_tested",
+      "evidence": [],
+      "note": "no redaction declared by this scenario"
+    }
+  ],
+  "verdict": "passed",
+  "evaluated_at": 1790032479.5123148
+}

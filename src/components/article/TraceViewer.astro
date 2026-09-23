@@ -1,0 +1,36 @@
+---
+import type { TraceEvent } from '../../data/evidence/schema.ts';
+
+interface Props {
+  events: TraceEvent[];
+  label?: string;
+  open?: boolean;
+}
+
+const { events, label = 'View trace', open = false } = Astro.props;
+const renderValue = (value: unknown) => typeof value === 'string' ? value : JSON.stringify(value);
+---
+
+{events.length > 0 && (
+  <details class="trace-viewer" open={open}>
+    <summary>{label} <span aria-hidden="true">({events.length})</span></summary>
+    <ol class="trace-viewer__events">
+      {events.map((event) => (
+        <li>
+          <header class="trace-viewer__header">
+            <code>{event.kind}</code>
+            {event.eventId && <span>{event.eventId}</span>}
+          </header>
+          <dl>
+            {event.at !== undefined && <><dt>logical time</dt><dd><code>{event.at.toFixed(1)}s</code></dd></>}
+            {event.observer && <><dt>observer</dt><dd><code>{event.observer}</code></dd></>}
+            {event.operation && <><dt>operation</dt><dd><code>{event.operation}</code></dd></>}
+            {Object.entries(event.detail).map(([key, value]) => (
+              <><dt>{key.replaceAll('_', ' ')}</dt><dd><code>{renderValue(value)}</code></dd></>
+            ))}
+          </dl>
+        </li>
+      ))}
+    </ol>
+  </details>
+)}

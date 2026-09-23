@@ -1,7 +1,7 @@
 ---
 title: Epoch
 slug: epoch
-summary: Temporal forking infrastructure for controlled batch and expiry testing with Firecracker/KVM microVMs on bare-metal Linux.
+summary: Temporal Forking Infrastructure for Deterministic Batch & Expiry Testing.
 status: Experimental / validated reference path
 repository: https://github.com/shanurwan/epoch
 year: 2026

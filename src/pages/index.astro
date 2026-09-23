@@ -40,9 +40,8 @@ const articles = (await getCollection('writing', ({ data }) => !data.draft))
         description="Case studies emphasise constraints, decisions, failure modes, and evidence—not product claims."
       />
       <div class="project-grid">
-        {projects.map((project, index) => <ProjectCard project={project} index={index} />)}
+        {projects.map((project, index) => <ProjectCard project={project} index={index} compact />)}
       </div>
-      <a class="section-action" href={withBase('projects/')}>View all projects →</a>
     </section>
 
     <section class="section" aria-labelledby="writing-heading">

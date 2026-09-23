@@ -1,0 +1,161 @@
+---
+title: Authorization as Infrastructure
+subtitle: Designing the Trust Boundary for Autonomous Agents
+slug: authorization-as-infrastructure
+description: An evidence-driven examination of delegated authority, approval, execution-time revalidation, canonical semantics, and replay control in NEST AuthZ.
+published: 2026-09-22
+tags:
+  - authorization
+  - agent infrastructure
+  - security
+  - distributed systems
+draft: false
+presentation: evidence
+---
+
+import AuthorizationFlow from '../../components/article/AuthorizationFlow.astro';
+import EvidenceLab from '../../components/article/EvidenceLab.astro';
+
+## 1. The problem
+
+An autonomous agent can discover a tool, authenticate to a runtime, and produce a request that satisfies a policy rule. None of those facts, separately or together, proves that the side effect should happen.
+
+Authorization for agent execution is a sequence of boundaries:
+
+- **Capability** describes what the agent can technically call.
+- **Policy** describes which operations are allowed under declared rules.
+- **Approval** records that an authorized principal approved one specific operation.
+- **Authority** identifies the principal or delegation chain under which the operation is attempted.
+- **Execution permit** records that the full boundary was satisfied against current state.
+- **Side effect** is the actual operation, after authorization—not part of authorization itself.
+
+<AuthorizationFlow />
+
+A single boolean check compresses these distinctions until it is difficult to tell *why* a request passed, *whose* authority it used, whether that authority remained valid, or whether the same authorization was replayed. NEST AuthZ is an alpha-stage reference implementation that makes those boundaries explicit and gives their decisions typed, canonical evidence.
+
+The rest of this article does not ask the reader to accept that claim. The lab exposes the recorded inputs, outcomes, trace events, tests, sources, and architectural decisions behind it.
+
+## 2. Security model
+
+NEST AuthZ separates the identity presented by a caller from the principal that can exercise authority. A **subject** is the external identity; a trusted binding resolves that subject to an **execution principal**. An **authority holder** owns a root grant. A delegated agent may act only through an authenticated chain derived from that grant.
+
+Delegation is attenuation, not inheritance without limits. Each child grant must stay within its parent's action, resource, validity, depth, and constraint bounds. Policy evaluates only after the delegated authority has been authenticated and its applicability established. A policy rule can restrict valid authority; it cannot manufacture authority that the grant chain does not contain.
+
+Some policy outcomes require approval. An approval attempt has its own authorization step: subject/principal binding, exact allowed-principal membership, and requirement matching are evaluated before a receipt is issued. The receipt is immutable evidence about an approved request and its context. It is not a standing capability.
+
+Before a protected side effect, NEST AuthZ performs fresh execution-time revalidation. It checks the permit candidate against the current delegation, authority, applicability, policy, identity binding, and approval requirements. A successful result produces an immutable **ExecutionPermit**. The durable reference adapter can then reserve the permit's deterministic execution identity, distinguishing a new reservation from a replay.
+
+The evidence objects depend on a canonical typed representation. A boolean and an integer are not interchangeable merely because a host language permits a loose equality between them. Canonical bytes and digests bind requests, grants, approvals, and permits to their types as well as their values.
+
+This model is intentionally fail-closed: malformed evidence, unknown operations, mismatched subjects, unauthorized approvers, invalid delegation, expired or revoked authority, changed requirements, and ambiguous execution state do not silently become permission.
+
+## 3. Evidence Lab
+
+The lab below is generated from a real `delegated_authority.yaml` scenario run at NEST AuthZ commit [`6c0deee`](https://github.com/shanurwan/nest-authz/commit/6c0deee8562617d272c121d1501691901607dd8c), plus a pinned canonical-encoding probe and focused repository tests. The scenario produced a standard Nanda Town evidence bundle. The article normalizes only the fields needed for review; the original artifacts remain downloadable.
+
+No authorization algorithm is reimplemented in client-side JavaScript. The controls only switch among evidence cases that were already evaluated.
+
+<EvidenceLab />
+
+## 4. Six infrastructure invariants
+
+### 1. Identity must resolve to an execution principal
+
+A subject is a presented identity. A principal is the authorization identity that may hold or receive authority. The link between them is a trusted binding, not an assumption extracted from caller-controlled metadata.
+
+Experiment 2 makes the distinction concrete: `principal:mallory` is explicitly bound, but binding alone does not place it in the approver allowlist. The outcome is the typed `PRINCIPAL_NOT_ALLOWED`, and no approval state transition follows.
+
+**Security principle:** identity metadata alone does not grant execution authority.
+
+### 2. Authorization decisions should be typed protocol objects
+
+`True` and `False` lose the distinction between invalid identity, exceeded bounds, missing approval, unauthorized approval, revoked authority, and a valid execution permit. That loss matters once a decision crosses an API, orchestrator, audit system, test suite, agent runtime, or protocol adapter.
+
+The traces expose typed states including `PERMIT`, `APPROVAL_REQUIRED`, `PRINCIPAL_NOT_ALLOWED`, `AUTHORIZED`, `BOUND_EXCEEDED`, `NEW_RESERVATION`, and `EXISTING_RESERVED`. Callers can handle each state explicitly without parsing prose or inferring a cause from a bare false value.
+
+**Security principle:** security decisions crossing component boundaries need a schema, not merely a truth value.
+
+### 3. Capability, policy, approval, and execution are separate boundaries
+
+A tool can be installed and callable while a request remains unauthorized. A policy can require approval without identifying any arbitrary authenticated user as a valid approver. Approval can be valid historical evidence while current execution authority has been revoked.
+
+Experiment 3 shows the complete distinction: the request reaches `APPROVAL_REQUIRED`, an authorized manager produces an `APPROVED` receipt, and execution still fails because revalidation finds the governing grant revoked. No execution permit is issued.
+
+**Security principle:** capability is not authorization; approval is not current authority; tool availability is not permission.
+
+### 4. Delegated authority can narrow, never widen
+
+Delegation is safe only if every descendant remains inside its ancestor's authority. In Experiment 1, the payment subagent can request a transfer of 700 under a bound of 1000. A request for 4000 reaches `BOUND_EXCEEDED`, even though a policy rule might otherwise match that operation.
+
+This ordering matters. If policy could enlarge a grant, a child could acquire authority its parent never possessed or never intended to delegate.
+
+**Security principle:** effective authority is the intersection of authenticated delegation, applicability, and policy—not their union.
+
+### 5. Execution authorization is a current-state decision
+
+Approval evidence records what happened at approval time. The execution boundary asks a different question: does the complete authority chain still authorize this exact side effect now? Revocation, expiry, policy replacement, changed requirements, a changed identity binding, or stale request evidence can change that answer.
+
+Fresh revalidation prevents historical approval from becoming a bearer token. The successful branch in Experiment 3 produces an `ExecutionPermit`; the revoked branch produces none.
+
+**Security principle:** immutable evidence preserves history, but current authority governs execution.
+
+### 6. Replay and recovery need an explicit durable boundary
+
+Retries are normal in infrastructure. Without a deterministic execution identity, retrying the same permit can accidentally create a second logical operation. Experiment 5 records one `NEW_RESERVATION`, followed by `EXISTING_RESERVED` for the same permit and the same execution ID.
+
+The SQLite reference adapter persists that state across reopen and rejects attempts to bypass uniqueness through a new store instance. Its limit is equally important: it cannot atomically commit an arbitrary external side effect. A crash after the side effect but before the local success transition leaves a reserved operation that needs application-specific reconciliation.
+
+**Security principle:** exactly-once claims must name the storage and side-effect boundary they actually cover.
+
+## 5. What this does NOT prove
+
+This evidence supports specific claims about the pinned alpha implementation and its tests. It does not establish production adoption, formal verification, resistance to every implementation defect, or suitability for every agent runtime.
+
+In particular, it does not prove:
+
+- distributed consensus or global exactly-once execution;
+- atomicity between the SQLite reservation store and an arbitrary external system;
+- secure key custody, production identity issuance, or operational secret rotation;
+- that one scenario covers every revocation, expiry, policy, or concurrency interleaving;
+- benchmark, throughput, or latency characteristics;
+- that a passing deterministic simulation replaces adversarial testing or a security review.
+
+The Nanda Town fixture keys are public, deterministic test material. They exist for repeatability and must not be reused operationally. The evidence viewer also does not independently verify the engine in a browser; reproduction requires running the pinned source and comparing the resulting artifacts.
+
+## 6. Reproduce locally
+
+The exact evidence shown here used adjacent clean checkouts of NEST AuthZ and Nanda Town. From a working directory with Python 3.11 or 3.12:
+
+```bash
+git clone https://github.com/shanurwan/nest-authz.git
+git clone https://github.com/projnanda/nandatown.git
+cd nest-authz
+git checkout 6c0deee8562617d272c121d1501691901607dd8c
+python -m venv .venv
+```
+
+Activate the environment (`source .venv/bin/activate` on POSIX, or `.venv\Scripts\Activate.ps1` in PowerShell), then install and run:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install --editable ../nandatown
+python -m pip install --editable ".[dev]"
+python -m unittest discover -s tests -p "test_nandatown_integration.py" -v
+nandatown run src/nest_authz/integrations/nandatown/delegated_authority.yaml \
+  --out .demo-runs --seed 42
+```
+
+Inspect `events.jsonl`, `result.json`, `manifest.json`, and `run.json` in the generated run directory. Filter events whose kinds begin with `nest_`; the event kinds used by this article are `nest_authorization_decided`, `nest_approval_authorization`, `nest_approval_state`, `nest_execution_revalidation`, `nest_execution_reservation`, and `nest_request_admitted`.
+
+Because environment metadata and run IDs may differ, compare semantic fields and validator results before comparing whole files byte-for-byte.
+
+## 7. Source and evidence references
+
+- [NEST AuthZ repository at the evidence commit](https://github.com/shanurwan/nest-authz/tree/6c0deee8562617d272c121d1501691901607dd8c)
+- [Security model](https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/docs/security-model.md)
+- [Threat model](https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/docs/threat-model.md)
+- [Failure modes](https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/docs/failure-modes.md)
+- [Authenticated delegation-chain ADR](https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/docs/adr/0011-authenticated-delegation-chain.md)
+- [Approval and execution-revalidation ADR](https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/docs/adr/0009-approval-authorization-and-execution-revalidation.md)
+- [Atomic execution-enforcement ADR](https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/docs/adr/0012-atomic-execution-enforcement.md)
+- [Nanda Town integration and evidence-contract ADR](https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/docs/adr/0013-nandatown-integration.md)

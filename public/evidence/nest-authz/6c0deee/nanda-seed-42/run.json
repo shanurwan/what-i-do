@@ -1,0 +1,57 @@
+{
+  "run_id": "sim-a3f64711badc",
+  "profile_name": "nest_authz_delegated_authority",
+  "profile_fingerprint": "sha256:e4195f0a4d136c886f9ecb88c6238ca4a39c53e30349ba276129b1eae35dd37a",
+  "created_at": 0.0,
+  "participants": [
+    {
+      "name": "authorization-gateway",
+      "role": "nest_authz_gateway"
+    },
+    {
+      "name": "payment-subagent",
+      "role": "nest_authz_actor"
+    },
+    {
+      "name": "finance-agent",
+      "role": "nest_authz_actor"
+    },
+    {
+      "name": "mallory",
+      "role": "nest_authz_actor"
+    },
+    {
+      "name": "authorized-manager",
+      "role": "nest_authz_actor"
+    },
+    {
+      "name": "scenario-controller",
+      "role": "nest_authz_actor"
+    }
+  ],
+  "releases": {
+    "nandatown": "0.2.0",
+    "evaluator": "lab-0.2.6",
+    "python": "3.12.7"
+  },
+  "config": {
+    "mode": "lab",
+    "seed": 42,
+    "layers": {
+      "transport": "memory.v1",
+      "communication": "envelope.v1",
+      "identity": "keys.v1",
+      "registry": "index.v1",
+      "auth": "nest-authz.v1",
+      "trust": "reputation.v1",
+      "payments": "ledger.v1",
+      "coordination": "contractnet.v1",
+      "negotiation": "haggle.v1",
+      "memory": "kv.v1",
+      "privacy": "redact.v1",
+      "data_facts": "evidence.v1"
+    },
+    "logical_time": 11.1,
+    "rerun_command": "nandatown run src\\nest_authz\\integrations\\nandatown\\delegated_authority.yaml --seed 42"
+  }
+}

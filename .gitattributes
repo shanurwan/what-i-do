@@ -3,3 +3,6 @@
 *.jpg binary
 *.jpeg binary
 *.webp binary
+
+# Provenance hashes refer to captured bytes; preserve evidence line endings and diff normalized records in src/data instead.
+public/evidence/** binary

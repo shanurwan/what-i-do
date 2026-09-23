@@ -1,0 +1,509 @@
+{
+  "schemaVersion": 1,
+  "repository": {
+    "name": "NEST AuthZ",
+    "url": "https://github.com/shanurwan/nest-authz",
+    "commit": "6c0deee8562617d272c121d1501691901607dd8c",
+    "commitUrl": "https://github.com/shanurwan/nest-authz/commit/6c0deee8562617d272c121d1501691901607dd8c"
+  },
+  "provenance": {
+    "scenario": "src/nest_authz/integrations/nandatown/delegated_authority.yaml",
+    "scenarioUrl": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/src/nest_authz/integrations/nandatown/delegated_authority.yaml",
+    "seed": 42,
+    "runId": "sim-a3f64711badc",
+    "generatedAt": "2026-09-21T23:14:39.520Z",
+    "command": "nandatown run src/nest_authz/integrations/nandatown/delegated_authority.yaml --out <evidence-dir> --seed 42",
+    "bundleFingerprint": "sha256:77c2063b72c3b1d4e79fb4de4650481f60d904328a816c0c322dc58e9a5ce3d4",
+    "files": [
+      {
+        "label": "events.jsonl",
+        "path": "evidence/nest-authz/6c0deee/nanda-seed-42/events.jsonl",
+        "sha256": "3b0ad557dc30e0df5c56c87442b5541d42349daa306daa6e47ff193b7a619212"
+      },
+      {
+        "label": "result.json",
+        "path": "evidence/nest-authz/6c0deee/nanda-seed-42/result.json",
+        "sha256": "b179ebdc99c8d477fb4b61173e71e0eeeaa0c7c05bc6cd9e4de42363827ee30d"
+      },
+      {
+        "label": "manifest.json",
+        "path": "evidence/nest-authz/6c0deee/nanda-seed-42/manifest.json",
+        "sha256": "58a9040482bade5933dc64081b106bf5426b9d7367e8e07264ab4fd6be000535"
+      },
+      {
+        "label": "run.json",
+        "path": "evidence/nest-authz/6c0deee/nanda-seed-42/run.json",
+        "sha256": "7468cdc490c002d57beec69fdd64a974fd2535a0e6c681de444b1b010c262770"
+      },
+      {
+        "label": "canonical-typed-values.json",
+        "path": "evidence/nest-authz/6c0deee/canonical-typed-values.json",
+        "sha256": "076dd76c525509b0a1585eba4515343e141ca2c626d9551299ceeffb3554b397"
+      }
+    ],
+    "runtime": {
+      "nandatownVersion": "0.2.0",
+      "nandatownRepository": "https://github.com/projnanda/nandatown",
+      "nandatownCommit": "17fbc7902be49683aee5f7610a0a1dcf8c803b3e",
+      "pythonVersion": "3.12.7"
+    },
+    "verification": [
+      "22 focused Nanda Town integration tests passed",
+      "31 evaluator tests passed",
+      "14 canonical encoding tests passed",
+      "42 approval and execution revalidation tests passed",
+      "35 SQLite execution enforcement tests passed"
+    ],
+    "note": "The NEST AuthZ and Nanda Town revisions were recorded from the clean local checkouts used to produce this bundle. The Nanda evidence format records release versions and hashes, but does not embed Git commit SHAs."
+  },
+  "experiments": [
+    {
+      "id": "delegated-authority",
+      "number": 1,
+      "title": "Delegated authority",
+      "description": "A payment subagent holds authority attenuated to amount <= 1000 for one action and resource. The browser switches between two events already produced by the real scenario.",
+      "invariant": "Delegation may preserve or narrow authority; policy cannot widen it.",
+      "presentation": "cases",
+      "cases": [
+        {
+          "id": "inside-bound",
+          "label": "Inside delegated bound",
+          "input": {
+            "agent": "payment-subagent",
+            "operation": "operation:subagent-700",
+            "action": "payments.transfer",
+            "resource": "account:alice",
+            "amount": 700,
+            "delegatedUpperBound": 1000
+          },
+          "outcome": "PERMIT",
+          "reason": "PERMIT_RULE_MATCHED",
+          "explanation": "The exact action and resource match, and 700 remains within the subagent's attenuated amount bound.",
+          "trace": [
+            {
+              "eventId": "ev-17",
+              "at": 1.1,
+              "observer": "nest-authz",
+              "kind": "nest_authorization_decided",
+              "operation": "operation:subagent-700",
+              "detail": {
+                "requesting_agent": "payment-subagent",
+                "action": "payments.transfer",
+                "resource": "account:alice",
+                "amount": 700,
+                "outcome": "PERMIT",
+                "status": "TRUSTED_AUTHORIZATION_COMPLETE",
+                "delegation_status": "AUTHENTICATED",
+                "applicability_status": "APPLICABLE",
+                "effective_grant": "grant:finance-payment-subagent",
+                "request_digest": "sha256:2ae87807a83522fbbc0aa49d22dc423fd9ace54e50bc120af4099a4a0d6bf3b6",
+                "policy_bundle_digest": "sha256:3a024718e7185fcdb2f821cb30b4d6be694da23b7bc34d04187c6c0772133be9",
+                "reason_codes": ["PERMIT_RULE_MATCHED"]
+              }
+            },
+            {
+              "eventId": "ev-18",
+              "at": 1.1,
+              "observer": "authorization-gateway",
+              "kind": "nest_request_admitted",
+              "operation": "operation:subagent-700",
+              "detail": {
+                "requesting_agent": "payment-subagent",
+                "command": "authorize"
+              }
+            }
+          ]
+        },
+        {
+          "id": "outside-bound",
+          "label": "Outside delegated bound",
+          "input": {
+            "agent": "payment-subagent",
+            "operation": "operation:subagent-4000",
+            "action": "payments.transfer",
+            "resource": "account:alice",
+            "amount": 4000,
+            "delegatedUpperBound": 1000
+          },
+          "outcome": "DENY",
+          "reason": "BOUND_EXCEEDED",
+          "explanation": "The policy cannot enlarge the subagent's authority. The request is denied before delivery to the authorization gateway.",
+          "trace": [
+            {
+              "eventId": "ev-21",
+              "at": 2.1,
+              "observer": "nest-authz",
+              "kind": "nest_authorization_decided",
+              "operation": "operation:subagent-4000",
+              "detail": {
+                "requesting_agent": "payment-subagent",
+                "action": "payments.transfer",
+                "resource": "account:alice",
+                "amount": 4000,
+                "outcome": "DENY",
+                "status": "TRUSTED_AUTHORIZATION_COMPLETE",
+                "delegation_status": "AUTHENTICATED",
+                "applicability_status": "BOUND_EXCEEDED",
+                "effective_grant": "grant:finance-payment-subagent",
+                "request_digest": "sha256:a0ba41f04305d2655c1dd4315afecfa15b04a8e55f335b5ba5934d32b91e8296",
+                "policy_bundle_digest": "sha256:3a024718e7185fcdb2f821cb30b4d6be694da23b7bc34d04187c6c0772133be9",
+                "reason_codes": ["AUTHORITY_BOUND_EXCEEDED"]
+              }
+            }
+          ]
+        }
+      ],
+      "links": [
+        {"label": "View source", "kind": "source", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/src/nest_authz/applicability.py#L53"},
+        {"label": "View test", "kind": "test", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/tests/test_nandatown_integration.py#L155-L166"},
+        {"label": "View ADR", "kind": "adr", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/docs/adr/0005-delegated-authority-and-attenuation.md"},
+        {"label": "View scenario", "kind": "scenario", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/src/nest_authz/integrations/nandatown/delegated_authority.yaml"},
+        {"label": "View raw evidence", "kind": "raw", "url": "evidence/nest-authz/6c0deee/nanda-seed-42/events.jsonl"}
+      ]
+    },
+    {
+      "id": "approver-authorization",
+      "number": 2,
+      "title": "Approver authorization",
+      "description": "A subject/principal binding identifies the actor. A separate exact allowlist decides whether that principal may satisfy MANAGER_APPROVAL.",
+      "invariant": "Being authenticated or bound to a principal does not make that principal an authorized approver.",
+      "presentation": "cases",
+      "cases": [
+        {
+          "id": "authorized-approver",
+          "label": "Authorized approver",
+          "input": {
+            "agent": "authorized-manager",
+            "boundPrincipal": "principal:authorized-manager",
+            "requirement": "MANAGER_APPROVAL"
+          },
+          "outcome": "AUTHORIZED",
+          "reason": "APPROVED",
+          "explanation": "The bound principal is present in the requirement's exact allowed-principal set, so the requirement transitions to APPROVED.",
+          "trace": [
+            {
+              "eventId": "ev-36",
+              "at": 5.1,
+              "observer": "nest-authz",
+              "kind": "nest_approval_authorization",
+              "operation": "operation:finance-primary",
+              "detail": {
+                "requesting_agent": "authorized-manager",
+                "bound_principal": "principal:authorized-manager",
+                "requirement": "MANAGER_APPROVAL",
+                "status": "AUTHORIZED"
+              }
+            },
+            {
+              "eventId": "ev-37",
+              "at": 5.1,
+              "observer": "nest-authz",
+              "kind": "nest_approval_state",
+              "operation": "operation:finance-primary",
+              "detail": {
+                "status": "APPROVED",
+                "requirement": "MANAGER_APPROVAL",
+                "approved_by": "principal:authorized-manager",
+                "receipt_digest": "sha256:c182d73f285594522caa6d86f26db2639fba4feeb43595fcbb6fa2b9fa951862"
+              }
+            }
+          ]
+        },
+        {
+          "id": "unauthorized-principal",
+          "label": "Unauthorized principal",
+          "input": {
+            "agent": "mallory",
+            "boundPrincipal": "principal:mallory",
+            "requirement": "MANAGER_APPROVAL"
+          },
+          "outcome": "PRINCIPAL_NOT_ALLOWED",
+          "reason": "PRINCIPAL_NOT_ALLOWED",
+          "explanation": "Mallory has an explicit binding, but the bound principal is not in the requirement's allowed-principal set. No approval transition occurs.",
+          "trace": [
+            {
+              "eventId": "ev-31",
+              "at": 4.1,
+              "observer": "nest-authz",
+              "kind": "nest_approval_authorization",
+              "operation": "operation:finance-primary",
+              "detail": {
+                "requesting_agent": "mallory",
+                "bound_principal": "principal:mallory",
+                "requirement": "MANAGER_APPROVAL",
+                "status": "PRINCIPAL_NOT_ALLOWED"
+              }
+            }
+          ]
+        }
+      ],
+      "links": [
+        {"label": "View source", "kind": "source", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/src/nest_authz/approver.py#L14"},
+        {"label": "View test", "kind": "test", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/tests/test_nandatown_integration.py#L217-L250"},
+        {"label": "View ADR", "kind": "adr", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/docs/adr/0009-approval-authorization-and-execution-revalidation.md"},
+        {"label": "View raw evidence", "kind": "raw", "url": "evidence/nest-authz/6c0deee/nanda-seed-42/events.jsonl"}
+      ]
+    },
+    {
+      "id": "approval-is-not-execution",
+      "number": 3,
+      "title": "Approval is not execution authority",
+      "description": "The same evidence chain reaches different execution outcomes depending on current authority at revalidation time.",
+      "invariant": "Historical approval cannot widen, create, or resurrect current authority.",
+      "presentation": "cases",
+      "cases": [
+        {
+          "id": "current-authority-valid",
+          "label": "Current authority valid",
+          "input": {
+            "operation": "operation:finance-replay",
+            "approval": "APPROVED",
+            "delegation": "AUTHENTICATED",
+            "authority": "VALID"
+          },
+          "outcome": "AUTHORIZED",
+          "reason": "EXECUTION_PERMIT_ISSUED",
+          "explanation": "The approval is receipt-bound and current authority, holder binding, applicability, policy, and requirements all pass fresh revalidation.",
+          "trace": [
+            {
+              "eventId": "ev-46",
+              "at": 7.1,
+              "observer": "nest-authz",
+              "kind": "nest_authorization_decided",
+              "operation": "operation:finance-replay",
+              "detail": {
+                "requesting_agent": "finance-agent",
+                "amount": 3000,
+                "outcome": "APPROVAL_REQUIRED",
+                "effective_grant": "grant:alice-finance-refresh"
+              }
+            },
+            {
+              "eventId": "ev-51",
+              "at": 8.1,
+              "observer": "nest-authz",
+              "kind": "nest_approval_state",
+              "operation": "operation:finance-replay",
+              "detail": {
+                "status": "APPROVED",
+                "requirement": "MANAGER_APPROVAL",
+                "approved_by": "principal:authorized-manager",
+                "receipt_digest": "sha256:c1c2c71983ee8f1927aa98a263e9444a5e4c63fb2e6909fb9bf83a50af031051"
+              }
+            },
+            {
+              "eventId": "ev-55",
+              "at": 9.1,
+              "observer": "nest-authz",
+              "kind": "nest_execution_revalidation",
+              "operation": "operation:finance-replay",
+              "detail": {
+                "status": "AUTHORIZED",
+                "delegation_status": "AUTHENTICATED",
+                "authority_status": "VALID",
+                "execution_status": "AUTHORIZED",
+                "offending_grant": null,
+                "revoked_grants": ["grant:alice-finance"],
+                "execution_permit_digest": "sha256:6260a52e1af9f99abef809f883ae982c456b7939b562831259a2fa49d83e5136"
+              }
+            }
+          ]
+        },
+        {
+          "id": "authority-revoked",
+          "label": "Authority revoked before execution",
+          "input": {
+            "operation": "operation:finance-primary",
+            "approval": "APPROVED",
+            "revokedGrant": "grant:alice-finance"
+          },
+          "outcome": "DELEGATION_AUTHENTICATION_FAILED",
+          "reason": "REVOKED",
+          "explanation": "Approval remains in the trace, but revalidation detects the revoked ancestor. No ExecutionPermit exists and the side effect cannot begin.",
+          "trace": [
+            {
+              "eventId": "ev-26",
+              "at": 3.1,
+              "observer": "nest-authz",
+              "kind": "nest_authorization_decided",
+              "operation": "operation:finance-primary",
+              "detail": {
+                "requesting_agent": "finance-agent",
+                "amount": 4000,
+                "outcome": "APPROVAL_REQUIRED",
+                "effective_grant": "grant:alice-finance"
+              }
+            },
+            {
+              "eventId": "ev-37",
+              "at": 5.1,
+              "observer": "nest-authz",
+              "kind": "nest_approval_state",
+              "operation": "operation:finance-primary",
+              "detail": {
+                "status": "APPROVED",
+                "requirement": "MANAGER_APPROVAL",
+                "approved_by": "principal:authorized-manager",
+                "receipt_digest": "sha256:c182d73f285594522caa6d86f26db2639fba4feeb43595fcbb6fa2b9fa951862"
+              }
+            },
+            {
+              "eventId": "ev-42",
+              "at": 6.1,
+              "observer": "nest-authz",
+              "kind": "nest_execution_revalidation",
+              "operation": "operation:finance-primary",
+              "detail": {
+                "status": "DELEGATION_AUTHENTICATION_FAILED",
+                "delegation_status": "STRUCTURAL_AUTHORITY_INVALID",
+                "authority_status": "REVOKED",
+                "execution_status": "NOT_EVALUATED",
+                "offending_grant": "grant:alice-finance",
+                "revoked_grants": ["grant:alice-finance"],
+                "execution_permit_digest": null
+              }
+            }
+          ]
+        }
+      ],
+      "links": [
+        {"label": "View source", "kind": "source", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/src/nest_authz/trusted.py#L69"},
+        {"label": "View test", "kind": "test", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/tests/test_execution.py#L794-L806"},
+        {"label": "View ADR", "kind": "adr", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/docs/adr/0009-approval-authorization-and-execution-revalidation.md"},
+        {"label": "View scenario", "kind": "scenario", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/src/nest_authz/integrations/nandatown/delegated_authority.yaml"},
+        {"label": "View raw evidence", "kind": "raw", "url": "evidence/nest-authz/6c0deee/nanda-seed-42/events.jsonl"}
+      ]
+    },
+    {
+      "id": "canonical-semantics",
+      "number": 4,
+      "title": "Canonical semantics",
+      "description": "The two values compare loosely in Python, but NEST AuthZ gives them different type tags, canonical bytes, and content digests.",
+      "invariant": "Canonical representation is part of the security protocol when evidence crosses process or system boundaries.",
+      "presentation": "comparison",
+      "cases": [
+        {
+          "id": "integer-one",
+          "label": "Integer 1",
+          "input": {"x": 1, "pythonType": "int", "canonicalTag": "I"},
+          "outcome": "sha256:64dedf7d59d643c1f23e6a79023290cf13f08fd380f733e91eac2fcbb0d10c0d",
+          "reason": "INTEGER",
+          "explanation": "The integer uses the canonical I tag and has its own typed RequestContext identity.",
+          "trace": []
+        },
+        {
+          "id": "boolean-true",
+          "label": "Boolean true",
+          "input": {"x": true, "pythonType": "bool", "canonicalTag": "B"},
+          "outcome": "sha256:a5d05bd70daa4dbdad89e4822788bb70f41eaea5b386159f77e799dcea11da27",
+          "reason": "BOOLEAN",
+          "explanation": "The boolean uses the canonical B tag. In an equality condition expecting integer 1, this type mismatch is ERROR and the decision fails closed to DENY.",
+          "trace": []
+        }
+      ],
+      "links": [
+        {"label": "View source", "kind": "source", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/src/nest_authz/canonical.py#L95-L102"},
+        {"label": "View canonical test", "kind": "test", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/tests/test_canonical.py#L208-L222"},
+        {"label": "View evaluator test", "kind": "test", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/tests/test_evaluator.py#L432-L443"},
+        {"label": "View ADR", "kind": "adr", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/docs/adr/0001-canonical-encoding.md"},
+        {"label": "View raw evidence", "kind": "raw", "url": "evidence/nest-authz/6c0deee/canonical-typed-values.json"}
+      ]
+    },
+    {
+      "id": "execution-replay",
+      "number": 5,
+      "title": "Execution replay",
+      "description": "Two reservations of the exact same ExecutionPermit return the same deterministic execution identity and leave the logical execution count at one.",
+      "invariant": "Only NEW_RESERVATION is the local durable gate to begin protected execution.",
+      "presentation": "cases",
+      "cases": [
+        {
+          "id": "first-reservation",
+          "label": "First reservation",
+          "input": {"operation": "operation:finance-replay", "attempt": 1},
+          "outcome": "NEW_RESERVATION",
+          "reason": "logical_execution_count=1",
+          "explanation": "The exact permit creates one logical execution record.",
+          "trace": [
+            {
+              "eventId": "ev-59",
+              "at": 10.1,
+              "observer": "nest-authz",
+              "kind": "nest_execution_reservation",
+              "operation": "operation:finance-replay",
+              "detail": {
+                "requesting_agent": "scenario-controller",
+                "status": "NEW_RESERVATION",
+                "execution_id": "execution:sha256:6260a52e1af9f99abef809f883ae982c456b7939b562831259a2fa49d83e5136",
+                "execution_permit_digest": "sha256:6260a52e1af9f99abef809f883ae982c456b7939b562831259a2fa49d83e5136",
+                "logical_execution_count": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "replay-reservation",
+          "label": "Replay same permit",
+          "input": {"operation": "operation:finance-replay", "attempt": 2},
+          "outcome": "EXISTING_RESERVED",
+          "reason": "logical_execution_count=1",
+          "explanation": "The replay observes the existing record and does not create a second logical execution.",
+          "trace": [
+            {
+              "eventId": "ev-63",
+              "at": 11.1,
+              "observer": "nest-authz",
+              "kind": "nest_execution_reservation",
+              "operation": "operation:finance-replay",
+              "detail": {
+                "requesting_agent": "scenario-controller",
+                "status": "EXISTING_RESERVED",
+                "execution_id": "execution:sha256:6260a52e1af9f99abef809f883ae982c456b7939b562831259a2fa49d83e5136",
+                "execution_permit_digest": "sha256:6260a52e1af9f99abef809f883ae982c456b7939b562831259a2fa49d83e5136",
+                "logical_execution_count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "links": [
+        {"label": "View source", "kind": "source", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/src/nest_authz/sqlite_execution_store.py#L211"},
+        {"label": "View test", "kind": "test", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/tests/test_nandatown_integration.py#L267-L284"},
+        {"label": "View ADR", "kind": "adr", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/docs/adr/0012-atomic-execution-enforcement.md"},
+        {"label": "View raw evidence", "kind": "raw", "url": "evidence/nest-authz/6c0deee/nanda-seed-42/events.jsonl"}
+      ]
+    },
+    {
+      "id": "failure-restart-semantics",
+      "number": 6,
+      "title": "Failure and restart semantics",
+      "description": "The durable SQLite reference adapter has explicit restart and terminal-state tests. This is a bounded local persistence claim, not distributed exactly-once execution.",
+      "invariant": "Retry and recovery behavior must preserve one execution identity while surfacing uncertainty about external side effects.",
+      "presentation": "evidence-card",
+      "cases": [
+        {
+          "id": "durable-local-boundary",
+          "label": "Documented local boundary",
+          "input": {
+            "tested": [
+              "reopening the store preserves records",
+              "a new store instance cannot bypass durable uniqueness",
+              "SUCCEEDED and FAILED are terminal",
+              "an abandoned RESERVED record requires application-specific reconciliation"
+            ]
+          },
+          "outcome": "LOCAL DURABILITY TESTED",
+          "reason": "NO GLOBAL EXACTLY-ONCE CLAIM",
+          "explanation": "NEST AuthZ can prevent a second local reservation for one exact permit in one authoritative SQLite database. It cannot atomically coordinate that database with an arbitrary external side effect.",
+          "trace": []
+        }
+      ],
+      "links": [
+        {"label": "View restart test", "kind": "test", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/tests/test_atomic_execution.py#L470-L477"},
+        {"label": "View uniqueness test", "kind": "test", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/tests/test_atomic_execution.py#L636-L648"},
+        {"label": "View ADR", "kind": "adr", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/docs/adr/0012-atomic-execution-enforcement.md"},
+        {"label": "View failure modes", "kind": "source", "url": "https://github.com/shanurwan/nest-authz/blob/6c0deee8562617d272c121d1501691901607dd8c/docs/failure-modes.md"}
+      ]
+    }
+  ]
+}

@@ -16,7 +16,7 @@ interface Props {
 
 const { article } = Astro.props;
 const { Content } = await render(article);
-const { title, description, published, updated, tags, draft, canonicalUrl } = article.data;
+const { title, subtitle, description, published, updated, tags, draft, canonicalUrl, presentation } = article.data;
 const formatDate = (date: Date) => date.toLocaleDateString('en-GB', {
   day: '2-digit',
   month: 'long',
@@ -41,8 +41,8 @@ const formatDate = (date: Date) => date.toLocaleDateString('en-GB', {
         {draft && <li>Draft — local preview only</li>}
       </ul>
       <h1>{title}</h1>
-      <p class="page-header__lede">{description}</p>
+      <p class="page-header__lede">{subtitle ?? description}</p>
     </header>
-    <div class="prose"><Content /></div>
+    <div class:list={["prose", { "prose--evidence": presentation === 'evidence' }]}><Content /></div>
   </article>
 </BaseLayout>

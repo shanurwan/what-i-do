@@ -1,7 +1,7 @@
 ---
-title: NEST AuthZ
+title: NEST Authz
 slug: nest-authz
-summary: An experimental authorization boundary for autonomous-agent actions, separating the ability to request an action from current authority to execute it.
+summary: Authorization infrastructure for autonomous-agent execution.
 status: Experimental / research prototype
 repository: https://github.com/shanurwan/nest-authz
 year: 2026

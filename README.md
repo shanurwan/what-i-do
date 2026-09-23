@@ -27,6 +27,8 @@ npm run preview  # serve the production build locally
 
 - `src/content/projects/` contains project case studies.
 - `src/content/writing/` contains Markdown or MDX articles.
+- `src/data/evidence/` contains validated, normalized evidence used by interactive article viewers.
+- `public/evidence/` contains the pinned raw artifacts those viewers reference.
 - `src/content.config.ts` defines and validates both content schemas.
 - `src/config/profile.ts` contains the display name and external profile/contact links.
 
@@ -38,9 +40,14 @@ to include the project on the homepage, and use `order` to control display order
 
 ### Add an article
 
-Copy `src/content/writing/authorization-is-not-a-moment.md`, then update its title, slug, description, date, tags, and
-body. Draft articles are visible in local development but are excluded from production routes, listings, RSS, and the
-sitemap. Change `draft` to `false` when the article is ready to publish.
+Create a Markdown or MDX file in `src/content/writing/` with `title`, `slug`, `description`, `published`, `tags`, and
+`draft` frontmatter. Use MDX only when the article needs a repository component. Draft articles are visible in local
+development but are excluded from production routes, listings, RSS, and the sitemap. Change `draft` to `false` when
+the article is ready to publish.
+
+The “Authorization as Infrastructure” lab reads normalized records from `src/data/evidence/nest-authz.json`; its raw
+scenario bundle is retained under `public/evidence/nest-authz/`. Replace evidence only with output from a pinned,
+recorded engine revision, update the provenance and hashes, and run the focused upstream tests before publishing.
 
 ## GitHub Pages deployment
 

@@ -1,0 +1,202 @@
+---
+import { nestAuthzEvidence as evidence } from '../../data/evidence/index.ts';
+import { withBase } from '../../utils/paths';
+import TraceViewer from './TraceViewer.astro';
+
+const internalUrl = (url: string) => url.startsWith('http') ? url : withBase(url);
+const shortCommit = evidence.repository.commit.slice(0, 7);
+const generatedDate = new Date(evidence.provenance.generatedAt).toLocaleString('en-GB', {
+  dateStyle: 'long',
+  timeStyle: 'short',
+  timeZone: 'UTC',
+});
+---
+
+<aside class="evidence-notice" aria-labelledby="evidence-notice-title">
+  <p class="eyebrow" id="evidence-notice-title">Evidence boundary</p>
+  <p>
+    This site does not execute NEST AuthZ in the browser. The controls below switch between static evidence produced
+    by the real authorization engine and captured from a pinned repository revision.
+  </p>
+</aside>
+
+<div class="evidence-lab" data-evidence-lab>
+  {evidence.experiments.map((experiment) => (
+    <section class="experiment" id={`experiment-${experiment.number}`} aria-labelledby={`${experiment.id}-title`}>
+      <header class="experiment__header">
+        <p class="eyebrow">Experiment {experiment.number.toString().padStart(2, '0')}</p>
+        <h3 id={`${experiment.id}-title`}>{experiment.title}</h3>
+        <p>{experiment.description}</p>
+      </header>
+
+      {experiment.id === 'delegated-authority' && (
+        <div class="delegation-diagram" aria-label="Delegated authority decision flow">
+          <div><span>Authority holder</span><strong>Principal / agent A</strong></div>
+          <span class="delegation-diagram__edge">delegates ≤ bound <b aria-hidden="true">↓</b></span>
+          <div><span>Delegated actor</span><strong>Payment subagent</strong></div>
+          <span class="delegation-diagram__edge">requests operation <b aria-hidden="true">↓</b></span>
+          <div><span>Boundary</span><strong>Authorization decision</strong></div>
+        </div>
+      )}
+
+      {experiment.id === 'approval-is-not-execution' && (
+        <ol class="execution-pipeline" aria-label="Execution authorization pipeline">
+          {['Request', 'Policy', 'Approval', 'Current authority / revalidation', 'Execution permit'].map((stage) => (
+            <li>{stage}</li>
+          ))}
+        </ol>
+      )}
+
+      {experiment.id === 'canonical-semantics' && (
+        <div class="semantic-comparison" aria-label="Host equality versus canonical type semantics">
+          <div><span>Python equality</span><code>1 == True</code><strong>True</strong></div>
+          <div><span>NEST canonical tags</span><code>I vs B</code><strong>Distinct</strong></div>
+        </div>
+      )}
+
+      {experiment.presentation === 'evidence-card' ? (
+        <div class="evidence-case evidence-case--single">
+          {experiment.cases.map((evidenceCase) => (
+            <div>
+              <p class="evidence-case__label">{evidenceCase.label}</p>
+              <p class="evidence-outcome" data-outcome={evidenceCase.outcome}>{evidenceCase.outcome}</p>
+              {evidenceCase.reason && <p class="evidence-reason">{evidenceCase.reason}</p>}
+              <p>{evidenceCase.explanation}</p>
+              {evidenceCase.input && <pre class="evidence-input"><code>{JSON.stringify(evidenceCase.input, null, 2)}</code></pre>}
+              <TraceViewer events={evidenceCase.trace} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div class:list={["evidence-switcher", { "evidence-switcher--comparison": experiment.presentation === 'comparison' }]} data-evidence-switcher>
+          <div class="evidence-switcher__tabs" role="tablist" aria-label={`${experiment.title} evidence cases`}>
+            {experiment.cases.map((evidenceCase, index) => (
+              <button
+                type="button"
+                role="tab"
+                id={`${experiment.id}-${evidenceCase.id}-tab`}
+                aria-controls={`${experiment.id}-${evidenceCase.id}-panel`}
+                aria-selected={index === 0 ? 'true' : 'false'}
+                tabindex={index === 0 ? 0 : -1}
+              >
+                {evidenceCase.label}
+              </button>
+            ))}
+          </div>
+          <div class="evidence-switcher__panels">
+            {experiment.cases.map((evidenceCase, index) => (
+              <div
+                class="evidence-case"
+                role="tabpanel"
+                id={`${experiment.id}-${evidenceCase.id}-panel`}
+                aria-labelledby={`${experiment.id}-${evidenceCase.id}-tab`}
+                hidden={index !== 0}
+              >
+                <div class="evidence-case__result">
+                  <p class="evidence-case__label">Recorded outcome</p>
+                  <p class="evidence-outcome" data-outcome={evidenceCase.outcome}>{evidenceCase.outcome}</p>
+                  {evidenceCase.reason && <p class="evidence-reason">reason: {evidenceCase.reason}</p>}
+                </div>
+                {evidenceCase.input && (
+                  <div>
+                    <p class="evidence-case__label">Recorded input</p>
+                    <pre class="evidence-input"><code>{JSON.stringify(evidenceCase.input, null, 2)}</code></pre>
+                  </div>
+                )}
+                <p class="evidence-case__explanation">{evidenceCase.explanation}</p>
+                <TraceViewer events={evidenceCase.trace} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div class="experiment__footer">
+        <p><strong>Invariant:</strong> {experiment.invariant}</p>
+        <ul class="evidence-links" aria-label={`${experiment.title} references`}>
+          {experiment.links.map((link) => (
+            <li><a href={internalUrl(link.url)}>{link.label}<span aria-hidden="true"> ↗</span></a></li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  ))}
+</div>
+
+<aside class="provenance-card" aria-labelledby="provenance-title">
+  <div>
+    <p class="eyebrow">Evidence provenance</p>
+    <h3 id="provenance-title">Pinned, inspectable, reproducible</h3>
+    <p>{evidence.provenance.note}</p>
+  </div>
+  <dl>
+    <dt>Repository</dt>
+    <dd><a href={evidence.repository.url}>{evidence.repository.name}</a></dd>
+    <dt>Commit</dt>
+    <dd><a href={evidence.repository.commitUrl}><code>{shortCommit}</code></a></dd>
+    <dt>Scenario</dt>
+    <dd><a href={evidence.provenance.scenarioUrl}><code>{evidence.provenance.scenario}</code></a></dd>
+    <dt>Seed</dt>
+    <dd><code>{evidence.provenance.seed}</code></dd>
+    <dt>Run</dt>
+    <dd><code>{evidence.provenance.runId}</code></dd>
+    <dt>Generated</dt>
+    <dd><time datetime={evidence.provenance.generatedAt}>{generatedDate} UTC</time></dd>
+    <dt>Bundle fingerprint</dt>
+    <dd><code>{evidence.provenance.bundleFingerprint}</code></dd>
+  </dl>
+  <details class="provenance-card__files">
+    <summary>Evidence files and SHA-256</summary>
+    <ul>
+      {evidence.provenance.files.map((file) => (
+        <li>
+          <a href={withBase(file.path)}>{file.label}</a>
+          <code>{file.sha256}</code>
+        </li>
+      ))}
+    </ul>
+  </details>
+  <details class="provenance-card__files">
+    <summary>Verification run</summary>
+    <ul>
+      {evidence.provenance.verification.map((result) => <li>{result}</li>)}
+    </ul>
+    <p>
+      Runtime: Nanda Town {evidence.provenance.runtime.nandatownVersion}, Python {evidence.provenance.runtime.pythonVersion}.
+      Nanda Town revision <a href={`${evidence.provenance.runtime.nandatownRepository}/commit/${evidence.provenance.runtime.nandatownCommit}`}><code>{evidence.provenance.runtime.nandatownCommit.slice(0, 7)}</code></a>.
+    </p>
+  </details>
+</aside>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-evidence-switcher]').forEach((switcher) => {
+    const tabs = Array.from(switcher.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const panels = Array.from(switcher.querySelectorAll<HTMLElement>('[role="tabpanel"]'));
+
+    const selectTab = (tab: HTMLButtonElement) => {
+      tabs.forEach((candidate) => {
+        const selected = candidate === tab;
+        candidate.setAttribute('aria-selected', String(selected));
+        candidate.tabIndex = selected ? 0 : -1;
+      });
+      panels.forEach((panel) => {
+        panel.hidden = panel.id !== tab.getAttribute('aria-controls');
+      });
+    };
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => selectTab(tab));
+      tab.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const targetIndex = event.key === 'Home'
+          ? 0
+          : event.key === 'End'
+            ? tabs.length - 1
+            : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+        selectTab(tabs[targetIndex]);
+        tabs[targetIndex].focus();
+      });
+    });
+  });
+</script>

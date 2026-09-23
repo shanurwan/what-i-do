@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/shanurwan/nest-authz",
+  "commit": "6c0deee8562617d272c121d1501691901607dd8c",
+  "pythonVersion": "3.12.7",
+  "method": "Construct RequestContext values with Python 3.12.7 and record canonical bytes plus content_digest() from NEST AuthZ at the pinned commit.",
+  "cases": [
+    {
+      "label": "Integer 1",
+      "request": {"x": 1},
+      "pythonType": "int",
+      "canonicalTag": "I",
+      "canonicalHex": "4e4553542d415554485a2d43414e4f4e4943414c000152000000000000005f53000000000000001c6e6573742d617574687a2f726571756573742d636f6e7465787440314d000000000000003153000000000000000a617474726962757465734d0000000000000015530000000000000001784900000000000000020001",
+      "digest": "sha256:64dedf7d59d643c1f23e6a79023290cf13f08fd380f733e91eac2fcbb0d10c0d"
+    },
+    {
+      "label": "Boolean true",
+      "request": {"x": true},
+      "pythonType": "bool",
+      "canonicalTag": "B",
+      "canonicalHex": "4e4553542d415554485a2d43414e4f4e4943414c000152000000000000005e53000000000000001c6e6573742d617574687a2f726571756573742d636f6e7465787440314d000000000000003053000000000000000a617474726962757465734d00000000000000145300000000000000017842000000000000000101",
+      "digest": "sha256:a5d05bd70daa4dbdad89e4822788bb70f41eaea5b386159f77e799dcea11da27"
+    }
+  ]
+}

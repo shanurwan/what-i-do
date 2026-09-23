@@ -45,10 +45,12 @@ const writing = defineCollection({
     title: z.string(),
     slug: z.string(),
     description: z.string(),
+    subtitle: z.string().optional(),
     published: z.coerce.date(),
     updated: z.coerce.date().optional(),
     tags: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
+    presentation: z.enum(['prose', 'evidence']).default('prose'),
     canonicalUrl: z.url().optional(),
   }),
 });

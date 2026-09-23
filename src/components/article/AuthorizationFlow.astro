@@ -1,0 +1,20 @@
+<figure class="authorization-flow" aria-labelledby="authorization-flow-caption">
+  <div class="authorization-flow__stages">
+    <div><strong>Capability</strong><span>What can the agent technically invoke?</span></div>
+    <span aria-hidden="true">↓</span>
+    <div><strong>Identity / principal</strong><span>Who is acting, and for which authority holder?</span></div>
+    <span aria-hidden="true">↓</span>
+    <div><strong>Policy</strong><span>Which operations are permitted under current rules?</span></div>
+    <span aria-hidden="true">↓</span>
+    <div><strong>Approval</strong><span>Was this exact operation approved by an allowed principal?</span></div>
+    <span aria-hidden="true">↓</span>
+    <div><strong>Execution revalidation</strong><span>Do authority and requirements still hold now?</span></div>
+    <span aria-hidden="true">↓</span>
+    <div class="authorization-flow__gate"><strong>Execution permit</strong><span>The complete boundary is satisfied.</span></div>
+    <span aria-hidden="true">↓</span>
+    <div><strong>Side effect</strong><span>The protected operation may begin.</span></div>
+  </div>
+  <figcaption id="authorization-flow-caption">
+    Availability at the top of the pipeline does not imply authority at the bottom.
+  </figcaption>
+</figure>
