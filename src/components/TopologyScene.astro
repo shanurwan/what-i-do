@@ -255,7 +255,7 @@ const nodes = [
 
     const applyTheme = () => {
       colors = palette();
-      nodeMeshes.forEach((mesh, i) => nodeMaterials[i].color.copy(specs[i].tier === 2 ? colors.text : colors.accent));
+      nodeMaterials.forEach((material, i) => material.color.copy(specs[i].tier === 2 ? colors.text : colors.accent));
       haloMaterial.color.copy(colors.accent);
       shellMaterial.color.copy(colors.line);
       edgeMaterial.color.copy(colors.line);

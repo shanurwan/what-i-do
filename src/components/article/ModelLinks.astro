@@ -1,0 +1,43 @@
+---
+/**
+ * Buttons that jump back to the city model and run a specific recorded scenario.
+ */
+const links = [
+  { scenario: 'principal', label: 'Identity ≠ authority', detail: 'Bound principal, not an approver' },
+  { scenario: 'bound', label: 'Narrow, never widen', detail: 'Request 4000 under bound 1000' },
+  { scenario: 'revoked', label: 'Approval ≠ execution', detail: 'Grant revoked after approval' },
+  { scenario: 'replay', label: 'Replay is recognised', detail: 'Same permit submitted twice' },
+  { scenario: 'permit', label: 'The happy path', detail: 'Every gate satisfied, once' },
+];
+---
+
+<div class="model-links" data-model-links>
+  <p class="eyebrow">Run it in the model</p>
+  <div class="model-links__grid">
+    {links.map((link) => (
+      <button type="button" class="model-link" data-model-scenario={link.scenario}>
+        <span class="model-link__label">{link.label}</span>
+        <span class="model-link__detail">{link.detail}</span>
+        <span class="model-link__arrow" aria-hidden="true">↑</span>
+      </button>
+    ))}
+  </div>
+</div>
+
+<script>
+  function init() {
+    document.querySelectorAll<HTMLElement>('[data-model-links]').forEach((root) => {
+      if (root.dataset.ready === 'true') return;
+      root.dataset.ready = 'true';
+      root.querySelectorAll<HTMLButtonElement>('[data-model-scenario]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const city = document.querySelector<HTMLElement>('[data-authorization-city]');
+          if (!city) return;
+          city.dispatchEvent(new CustomEvent('city:select', { detail: button.dataset.modelScenario }));
+        });
+      });
+    });
+  }
+  init();
+  document.addEventListener('astro:page-load', init);
+</script>

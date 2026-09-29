@@ -1,0 +1,198 @@
+---
+/**
+ * 3D model of delegation as attenuation. Each grant sits inside its parent; a request block
+ * wider than the delegated bound overhangs and is refused. The bound of 1000 and the recorded
+ * requests of 700 and 4000 come from the delegated_authority scenario.
+ */
+const bound = 1000;
+const presets = [700, 1000, 1500, 4000];
+---
+
+<figure class="tower" data-delegation-tower aria-labelledby="tower-caption">
+  <div class="tower__stage">
+    <canvas class="tower__canvas" aria-hidden="true"></canvas>
+    <div class="tower__labels" aria-hidden="true">
+      <span class="tower__label" data-tower-label="root">Authority holder · root grant</span>
+      <span class="tower__label" data-tower-label="child">Payment subagent · bound {bound}</span>
+      <span class="tower__label tower__label--request" data-tower-label="request">Request · 700</span>
+    </div>
+    <div class="tower__static">
+      <p>Root grant → delegated grant (bound {bound}) → request. A request wider than its grant is refused before policy runs.</p>
+    </div>
+  </div>
+  <div class="tower__panel">
+    <label class="tower__slider">
+      <span class="tower__slider-label">Requested amount <output data-tower-value>700</output></span>
+      <input type="range" min="0" max="4000" step="50" value="700" data-tower-input aria-label="Requested transfer amount" />
+    </label>
+    <div class="tower__presets" role="group" aria-label="Recorded request amounts">
+      {presets.map((amount) => (
+        <button type="button" class="tower__preset" data-tower-preset={amount}>{amount}</button>
+      ))}
+    </div>
+    <p class="tower__outcome" data-tower-outcome data-kind="pass">
+      <span class="tower__outcome-badge">PERMIT</span>
+      <span class="tower__outcome-note">700 stays inside the delegated bound of {bound}.</span>
+    </p>
+  </div>
+  <figcaption id="tower-caption">
+    Effective authority is the intersection of the chain, not the union. A child grant can narrow its parent and never widen it.
+  </figcaption>
+</figure>
+
+<script>
+  import { attachDragRotate, createSceneHost, type SceneHost } from '../../scripts/scene-kit';
+
+  const BOUND = 1000;
+  let active: (() => void) | null = null;
+
+  async function mount(root: HTMLElement) {
+    const canvas = root.querySelector<HTMLCanvasElement>('canvas');
+    const stage = root.querySelector<HTMLElement>('.tower__stage');
+    const input = root.querySelector<HTMLInputElement>('[data-tower-input]');
+    const valueEl = root.querySelector<HTMLElement>('[data-tower-value]');
+    const outcomeEl = root.querySelector<HTMLElement>('[data-tower-outcome]');
+    const presets = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-tower-preset]'));
+    const labelRoot = root.querySelector<HTMLElement>('[data-tower-label="root"]');
+    const labelChild = root.querySelector<HTMLElement>('[data-tower-label="child"]');
+    const labelRequest = root.querySelector<HTMLElement>('[data-tower-label="request"]');
+    if (!canvas || !stage || !input || !valueEl || !outcomeEl || !labelRoot || !labelChild || !labelRequest) return null;
+
+    let frameFn: (dt: number) => void = () => {};
+    const host: SceneHost | null = await createSceneHost(stage, canvas, {
+      camera: 'orthographic',
+      viewSize: 7.5,
+      shadows: true,
+      onFrame: (dt) => frameFn(dt),
+    });
+    if (!host) {
+      root.classList.add('is-fallback');
+      return null;
+    }
+    const { THREE, scene, camera } = host;
+    root.classList.add('is-ready');
+
+    const group = new THREE.Group();
+    scene.add(group);
+
+    const base = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.2, 4.4), new THREE.MeshLambertMaterial({ color: 0x8fc98f }));
+    base.position.y = -0.1;
+    base.receiveShadow = true;
+    group.add(base);
+
+    const makeBlock = (w: number, h: number, d: number, color: number) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color }));
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      return mesh;
+    };
+
+    const rootBlock = makeBlock(4.4, 0.7, 2.8, 0x6fa8dc);
+    rootBlock.position.y = 0.35;
+    const childWidth = 2.2; // represents bound 1000
+    const childBlock = makeBlock(childWidth, 0.7, 2.0, 0xb39ddb);
+    childBlock.position.y = 1.05;
+    const requestMatPass = new THREE.MeshLambertMaterial({ color: 0x5fd3ad });
+    const requestMatStop = new THREE.MeshLambertMaterial({ color: 0xe5484d, transparent: true, opacity: 0.85 });
+    const requestBlock = new THREE.Mesh(new THREE.BoxGeometry(1, 0.6, 1.4), requestMatPass);
+    requestBlock.position.y = 1.7;
+    requestBlock.castShadow = true;
+    const overhangEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 0.62, 1.42)),
+      new THREE.LineBasicMaterial({ color: 0xe5484d }),
+    );
+    overhangEdges.position.y = 1.7;
+    overhangEdges.visible = false;
+    group.add(rootBlock, childBlock, requestBlock, overhangEdges);
+
+    const ambient = new THREE.AmbientLight(0xffffff, 0.9);
+    const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+    sun.position.set(5, 9, 4);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.left = -6;
+    sun.shadow.camera.right = 6;
+    sun.shadow.camera.top = 6;
+    sun.shadow.camera.bottom = -6;
+    scene.add(ambient, sun);
+
+    camera.position.set(9, 8, 9);
+    camera.lookAt(0, 0.9, 0);
+    group.rotation.y = 0.2;
+
+    let targetWidth = (700 / BOUND) * childWidth;
+    let currentWidth = targetWidth;
+    let idle = 0;
+
+    const setAmount = (amount: number) => {
+      const clamped = Math.max(0, Math.min(4000, amount));
+      input.value = String(clamped);
+      valueEl.textContent = String(clamped);
+      targetWidth = Math.max(0.15, (clamped / BOUND) * childWidth);
+      const exceeded = clamped > BOUND;
+      requestBlock.material = exceeded ? requestMatStop : requestMatPass;
+      overhangEdges.visible = exceeded;
+      outcomeEl.dataset.kind = exceeded ? 'stop' : 'pass';
+      outcomeEl.querySelector('.tower__outcome-badge')!.textContent = exceeded ? 'DENY · BOUND_EXCEEDED' : 'PERMIT';
+      outcomeEl.querySelector('.tower__outcome-note')!.textContent = exceeded
+        ? `${clamped} exceeds the delegated bound of ${BOUND}. Policy is never consulted.`
+        : `${clamped} stays inside the delegated bound of ${BOUND}.`;
+      labelRequest.textContent = `Request · ${clamped}`;
+      labelRequest.classList.toggle('is-stop', exceeded);
+      presets.forEach((button) => button.classList.toggle('is-active', Number(button.dataset.towerPreset) === clamped));
+      idle = 0;
+      host?.start();
+    };
+
+    input.addEventListener('input', () => setAmount(Number(input.value)));
+    presets.forEach((button) => button.addEventListener('click', () => setAmount(Number(button.dataset.towerPreset))));
+
+    const detachDrag = attachDragRotate(canvas, group, { speed: 0.008, onChange: () => { idle = 0; host?.render(); } });
+
+    const scratch = new THREE.Vector3();
+    const place = (el: HTMLElement, x: number, y: number, z: number) => {
+      scratch.set(x, y, z).applyMatrix4(group.matrixWorld);
+      const p = host!.toScreen(scratch);
+      el.style.transform = `translate(-50%, -100%) translate(${p.x.toFixed(0)}px, ${p.y.toFixed(0)}px)`;
+    };
+    const placeLabels = () => {
+      group.updateMatrixWorld();
+      place(labelRoot, -2.2, 0.75, 1.4);
+      place(labelChild, -1.1, 1.45, 1.0);
+      place(labelRequest, 0, 2.15, 0.7);
+    };
+
+    frameFn = (dt) => {
+      idle += dt;
+      currentWidth += (targetWidth - currentWidth) * (host.reduceMotion ? 1 : 0.15);
+      requestBlock.scale.x = currentWidth;
+      overhangEdges.scale.x = currentWidth;
+      if (!host.reduceMotion && idle > 2) group.rotation.y += dt * 0.15;
+      placeLabels();
+    };
+
+    setAmount(700);
+    placeLabels();
+    host.render();
+
+    return () => {
+      detachDrag();
+      host.dispose();
+    };
+  }
+
+  async function init() {
+    const root = document.querySelector<HTMLElement>('[data-delegation-tower]');
+    if (!root || root.dataset.ready === 'true') return;
+    root.dataset.ready = 'true';
+    active = await mount(root);
+  }
+
+  document.addEventListener('astro:before-swap', () => {
+    active?.();
+    active = null;
+  });
+
+  init();
+  document.addEventListener('astro:page-load', init);
+</script>

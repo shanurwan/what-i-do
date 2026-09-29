@@ -1,0 +1,617 @@
+---
+/**
+ * Isometric 3D model of the authorization pipeline. A request drives through seven districts;
+ * each recorded scenario stops it at the gate where the real engine refused it.
+ * Outcomes and captions follow the pinned evidence bundle; nothing is evaluated in the browser.
+ */
+interface Stage { id: string; label: string; caption: string }
+interface Scenario {
+  id: string;
+  title: string;
+  outcome: string;
+  reason?: string;
+  stopAt: number | null;
+  replay?: boolean;
+  captions: Record<number, string>;
+}
+
+const stages: Stage[] = [
+  { id: 'capability', label: 'Capability', caption: 'The agent can technically call the payment tool. Availability proves nothing about authority.' },
+  { id: 'authority', label: 'Authority', caption: 'The delegation chain is authenticated and the request is checked against the delegated bound.' },
+  { id: 'policy', label: 'Policy', caption: 'Declared rules are evaluated against the request. Transfers above a threshold require approval.' },
+  { id: 'approval', label: 'Approval', caption: 'An explicitly allowed principal must approve this exact request, producing an immutable receipt.' },
+  { id: 'revalidation', label: 'Revalidation', caption: 'Current delegation, revocation, binding, policy, and approval state are recomputed at execution time.' },
+  { id: 'permit', label: 'Permit & reservation', caption: 'An ExecutionPermit is issued and the durable store reserves its deterministic execution identity.' },
+  { id: 'effect', label: 'Side effect', caption: 'Only now does the protected operation run.' },
+];
+
+const scenarios: Scenario[] = [
+  {
+    id: 'permit',
+    title: 'Transfer 700 under a bound of 1000',
+    outcome: 'PERMIT',
+    stopAt: null,
+    captions: {
+      1: 'The payment subagent requests 700. That is inside its delegated bound of 1000.',
+      3: 'An allowed principal approves the exact request. A receipt is recorded.',
+      4: 'Nothing has changed since approval: the chain still authorizes this side effect.',
+      5: 'NEW_RESERVATION. The permit is reserved once, under its execution id.',
+    },
+  },
+  {
+    id: 'bound',
+    title: 'Transfer 4000 under a bound of 1000',
+    outcome: 'DENY',
+    reason: 'BOUND_EXCEEDED',
+    stopAt: 1,
+    captions: {
+      1: '4000 exceeds the delegated bound of 1000. Policy is never consulted, so no rule can widen the grant.',
+    },
+  },
+  {
+    id: 'principal',
+    title: 'Approval by an unlisted principal',
+    outcome: 'PRINCIPAL_NOT_ALLOWED',
+    stopAt: 3,
+    captions: {
+      1: 'The request itself is inside the bound.',
+      2: 'Policy requires approval for this operation.',
+      3: 'principal:mallory is a bound principal, but is not in the approver allowlist. No approval state transition occurs.',
+    },
+  },
+  {
+    id: 'revoked',
+    title: 'Grant revoked after approval',
+    outcome: 'DELEGATION_AUTHENTICATION_FAILED',
+    stopAt: 4,
+    captions: {
+      3: 'An authorized manager approves. The receipt is valid historical evidence.',
+      4: 'Revalidation finds the governing grant revoked. The receipt does not become a bearer token: no permit is issued.',
+    },
+  },
+  {
+    id: 'replay',
+    title: 'Same permit submitted twice',
+    outcome: 'EXISTING_RESERVED',
+    stopAt: 5,
+    replay: true,
+    captions: {
+      5: 'The same execution id is already reserved. The retry is recognised instead of creating a second logical operation.',
+    },
+  },
+];
+---
+
+<figure class="city" data-authorization-city aria-labelledby="city-caption">
+  <div class="city__tabs" role="tablist" aria-label="Recorded scenarios">
+    {scenarios.map((scenario, index) => (
+      <button
+        type="button"
+        role="tab"
+        class="city__tab"
+        aria-selected={index === 0 ? 'true' : 'false'}
+        tabindex={index === 0 ? 0 : -1}
+        data-city-scenario={scenario.id}
+      >
+        <span class="city__tab-index">{String(index + 1).padStart(2, '0')}</span>
+        <span>{scenario.title}</span>
+      </button>
+    ))}
+  </div>
+
+  <div class="city__stage">
+    <canvas class="city__canvas" aria-hidden="true"></canvas>
+    <div class="city__labels" aria-hidden="true">
+      {stages.map((stage, index) => (
+        <span class="city__label" data-city-label={index}>{stage.label}</span>
+      ))}
+    </div>
+    <div class="city__hud" aria-hidden="true">
+      <span>drag to rotate</span>
+      <span class="city__hud-outcome" data-city-outcome hidden></span>
+    </div>
+    <ol class="city__static">
+      {stages.map((stage) => (
+        <li><strong>{stage.label}</strong><span>{stage.caption}</span></li>
+      ))}
+    </ol>
+  </div>
+
+  <div class="city__panel">
+    <ol class="city__track" aria-label="Pipeline stages">
+      {stages.map((stage, index) => (
+        <li class="city__step" data-city-step={index}>
+          <span class="city__step-index">{index + 1}</span>
+          <span class="city__step-label">{stage.label}</span>
+        </li>
+      ))}
+    </ol>
+    <div class="city__readout">
+      <p class="city__readout-stage" data-city-stage>Ready</p>
+      <p class="city__readout-caption" data-city-caption>Press play or step through the gates. Each stop matches the outcome the engine recorded.</p>
+    </div>
+    <div class="city__controls">
+      <button type="button" class="button button--primary" data-city-play>Play</button>
+      <button type="button" class="button" data-city-step-btn>Step</button>
+      <button type="button" class="button button--ghost" data-city-reset>Reset</button>
+    </div>
+  </div>
+
+  <figcaption id="city-caption">
+    Availability at the top of the pipeline does not imply authority at the bottom. The gates are where the recorded
+    scenarios actually stopped.
+  </figcaption>
+
+  <script type="application/json" data-city-data set:html={JSON.stringify({ stages, scenarios })} />
+</figure>
+
+<script>
+  import { attachDragRotate, createSceneHost, type SceneHost } from '../../scripts/scene-kit';
+
+  interface Stage { id: string; label: string; caption: string }
+  interface Scenario {
+    id: string;
+    title: string;
+    outcome: string;
+    reason?: string;
+    stopAt: number | null;
+    replay?: boolean;
+    captions: Record<number, string>;
+  }
+  type Mode = 'idle' | 'driving' | 'checking' | 'lifting' | 'waiting' | 'stopped' | 'done';
+
+  let active: (() => void) | null = null;
+
+  async function mount(root: HTMLElement) {
+    const canvas = root.querySelector<HTMLCanvasElement>('canvas');
+    const dataEl = root.querySelector<HTMLScriptElement>('[data-city-data]');
+    const stageEl = root.querySelector<HTMLElement>('[data-city-stage]');
+    const captionEl = root.querySelector<HTMLElement>('[data-city-caption]');
+    const outcomeEl = root.querySelector<HTMLElement>('[data-city-outcome]');
+    const playBtn = root.querySelector<HTMLButtonElement>('[data-city-play]');
+    const stepBtn = root.querySelector<HTMLButtonElement>('[data-city-step-btn]');
+    const resetBtn = root.querySelector<HTMLButtonElement>('[data-city-reset]');
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const steps = Array.from(root.querySelectorAll<HTMLElement>('[data-city-step]'));
+    const labels = Array.from(root.querySelectorAll<HTMLElement>('[data-city-label]'));
+    if (!canvas || !dataEl || !stageEl || !captionEl || !outcomeEl || !playBtn || !stepBtn || !resetBtn) return null;
+
+    const { stages, scenarios } = JSON.parse(dataEl.textContent ?? '{}') as { stages: Stage[]; scenarios: Scenario[] };
+
+    let host: SceneHost | null = null;
+    const state = {
+      scenario: scenarios[0],
+      stage: 0,
+      mode: 'idle' as Mode,
+      timer: 0,
+      playing: false,
+      secondPass: false,
+      vehicleX: 0,
+    };
+
+    let frameFn: (dt: number) => void = () => {};
+    let themeFn: () => void = () => {};
+    host = await createSceneHost(root.querySelector<HTMLElement>('.city__stage')!, canvas, {
+      camera: 'orthographic',
+      viewSize: 11,
+      shadows: true,
+      onFrame: (dt) => frameFn(dt),
+      onTheme: () => themeFn(),
+    });
+    if (!host) {
+      root.classList.add('is-fallback');
+      return null;
+    }
+    const { THREE, scene, camera } = host;
+    root.classList.add('is-ready');
+
+    // ---- World -------------------------------------------------------------
+    const world = new THREE.Group();
+    scene.add(world);
+
+    const laneZ = 0;
+    const districtX = (i: number) => -9 + i * 3;
+    const startX = -12.5;
+    const endX = 12.5;
+
+    const palette = {
+      ground: [0x8fc98f, 0x86c186, 0x97cf97],
+      buildings: [0x6fa8dc, 0xf0b27a, 0xb39ddb, 0xf6d55c, 0x7fcdcd, 0x9fd18a, 0xf28b82],
+      roofs: [0x4a7fb5, 0xc98a52, 0x8b6fbf, 0xd1b13a, 0x4fa3a3, 0x6fa85a, 0xc5605a],
+      trunk: 0x8d6e63,
+      leaf: [0x4f9d4f, 0x5cae5c, 0x3f8f3f],
+    };
+
+    const groundMat = new THREE.MeshLambertMaterial({ color: palette.ground[0] });
+    const tileGeo = new THREE.BoxGeometry(1, 0.2, 1);
+    const tiles: import('three').Mesh[] = [];
+    for (let x = -12; x <= 12; x++) {
+      for (let z = -5; z <= 5; z++) {
+        const shade = palette.ground[(Math.abs(x * 7 + z * 13)) % palette.ground.length];
+        const mat = groundMat.clone();
+        mat.color.setHex(shade);
+        const tile = new THREE.Mesh(tileGeo, mat);
+        tile.position.set(x, -0.1, z);
+        tile.receiveShadow = true;
+        world.add(tile);
+        tiles.push(tile);
+      }
+    }
+
+    const roadMat = new THREE.MeshLambertMaterial({ color: 0x3c4043 });
+    const road = new THREE.Mesh(new THREE.BoxGeometry(26, 0.06, 1.6), roadMat);
+    road.position.set(0, 0.02, laneZ);
+    road.receiveShadow = true;
+    world.add(road);
+    const dashMat = new THREE.MeshBasicMaterial({ color: 0xf1f3f4 });
+    for (let x = -12; x <= 12; x += 1.2) {
+      const dash = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.07, 0.08), dashMat);
+      dash.position.set(x, 0.06, laneZ);
+      world.add(dash);
+    }
+
+    const buildingAnchors: import('three').Vector3[] = [];
+    const buildings: import('three').Mesh[] = [];
+    stages.forEach((_, i) => {
+      const x = districtX(i);
+      const height = [1.3, 2.4, 1.9, 2.1, 2.6, 1.7, 1.5][i] ?? 1.6;
+      const body = new THREE.Mesh(
+        new THREE.BoxGeometry(1.8, height, 1.6),
+        new THREE.MeshLambertMaterial({ color: palette.buildings[i] }),
+      );
+      body.position.set(x, height / 2, -2.3);
+      body.castShadow = true;
+      body.receiveShadow = true;
+      world.add(body);
+      buildings.push(body);
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.16, 1.75), new THREE.MeshLambertMaterial({ color: palette.roofs[i] }));
+      roof.position.set(x, height + 0.08, -2.3);
+      roof.castShadow = true;
+      world.add(roof);
+      const annex = new THREE.Mesh(new THREE.BoxGeometry(0.9, height * 0.45, 0.9), new THREE.MeshLambertMaterial({ color: palette.buildings[i] }));
+      annex.position.set(x + 1.15, (height * 0.45) / 2, -3.2);
+      annex.castShadow = true;
+      world.add(annex);
+      // window strips
+      for (let w = 0.5; w < height - 0.3; w += 0.55) {
+        const strip = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.18, 0.04), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 }));
+        strip.position.set(x, w, -1.48);
+        world.add(strip);
+      }
+      buildingAnchors.push(new THREE.Vector3(x, height + 0.9, -2.3));
+    });
+
+    // Trees
+    const trunkGeo = new THREE.CylinderGeometry(0.08, 0.1, 0.5, 6);
+    const leafGeo = new THREE.ConeGeometry(0.42, 0.9, 7);
+    const treeSpots: [number, number][] = [
+      [-11, 3.2], [-9.5, 4], [-7, 3.4], [-4.2, 4.2], [-2, 3.1], [1.4, 4.1], [3.6, 3.3], [6.2, 4.3], [8.4, 3.2], [11, 3.9],
+      [-11.4, -4.2], [-6.4, -4.4], [-0.6, -4.5], [4.4, -4.3], [9.6, -4.4], [11.6, -2.6], [-11.8, 1.6], [11.9, 1.8],
+    ];
+    treeSpots.forEach(([x, z], i) => {
+      const trunk = new THREE.Mesh(trunkGeo, new THREE.MeshLambertMaterial({ color: palette.trunk }));
+      trunk.position.set(x, 0.25, z);
+      trunk.castShadow = true;
+      world.add(trunk);
+      const leaf = new THREE.Mesh(leafGeo, new THREE.MeshLambertMaterial({ color: palette.leaf[i % palette.leaf.length] }));
+      leaf.position.set(x, 0.9, z);
+      leaf.castShadow = true;
+      world.add(leaf);
+    });
+
+    // Gates
+    const gateMats = {
+      idle: new THREE.MeshLambertMaterial({ color: 0xf1f3f4 }),
+      pass: new THREE.MeshLambertMaterial({ color: 0x5fd3ad }),
+      stop: new THREE.MeshLambertMaterial({ color: 0xe5484d }),
+    };
+    const postMat = new THREE.MeshLambertMaterial({ color: 0x5f6368 });
+    const gates = stages.map((_, i) => {
+      const x = districtX(i) + 0.9;
+      const postGeo = new THREE.BoxGeometry(0.18, 0.9, 0.18);
+      const postA = new THREE.Mesh(postGeo, postMat);
+      postA.position.set(x, 0.45, -1.0);
+      postA.castShadow = true;
+      const postB = new THREE.Mesh(postGeo, postMat);
+      postB.position.set(x, 0.45, 1.0);
+      postB.castShadow = true;
+      world.add(postA, postB);
+      const pivot = new THREE.Group();
+      pivot.position.set(x, 0.8, -1.0);
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 2.0), gateMats.idle);
+      bar.position.set(0, 0, 1.0);
+      bar.castShadow = true;
+      pivot.add(bar);
+      world.add(pivot);
+      return { pivot, bar, x };
+    });
+
+    // Vehicle
+    const vehicle = new THREE.Group();
+    const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.34, 0.5), new THREE.MeshLambertMaterial({ color: 0x1a73e8 }));
+    bodyMesh.position.y = 0.3;
+    bodyMesh.castShadow = true;
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.26, 0.44), new THREE.MeshLambertMaterial({ color: 0xdfe8ff }));
+    cabin.position.set(-0.05, 0.6, 0);
+    cabin.castShadow = true;
+    const wheelGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.1, 10);
+    const wheelMat = new THREE.MeshLambertMaterial({ color: 0x202124 });
+    [[-0.3, 0.28], [0.3, 0.28], [-0.3, -0.28], [0.3, -0.28]].forEach(([wx, wz]) => {
+      const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+      wheel.rotation.x = Math.PI / 2;
+      wheel.position.set(wx, 0.12, wz);
+      vehicle.add(wheel);
+    });
+    const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), new THREE.MeshBasicMaterial({ color: 0x5fd3ad }));
+    beacon.position.set(0.2, 0.8, 0);
+    vehicle.add(bodyMesh, cabin, beacon);
+    world.add(vehicle);
+
+    // Lights
+    const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+    const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+    sun.position.set(8, 14, 6);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.left = -16;
+    sun.shadow.camera.right = 16;
+    sun.shadow.camera.top = 12;
+    sun.shadow.camera.bottom = -12;
+    sun.shadow.camera.near = 1;
+    sun.shadow.camera.far = 40;
+    scene.add(ambient, sun);
+
+    camera.position.set(16, 15, 16);
+    const target = new THREE.Vector3(0, 0.6, 0);
+    camera.lookAt(target);
+
+    const detachDrag = attachDragRotate(canvas, world, {
+      min: -0.6,
+      max: 0.6,
+      speed: 0.005,
+      onChange: () => {
+        world.updateMatrixWorld();
+        placeLabels();
+        host?.render();
+      },
+    });
+
+    const applyTheme = () => {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark'
+        || (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      ambient.intensity = dark ? 0.7 : 0.9;
+      sun.intensity = dark ? 1.35 : 1.6;
+    };
+    applyTheme();
+
+    // ---- Simulation ----------------------------------------------------------
+    const gateStopX = (i: number) => gates[i].x - 0.85;
+    const speed = host.reduceMotion ? 60 : 3.2;
+
+    const setOutcome = (text: string | null, kind: 'pass' | 'stop' | null) => {
+      outcomeEl.hidden = !text;
+      outcomeEl.textContent = text ?? '';
+      outcomeEl.dataset.kind = kind ?? '';
+    };
+
+    const setCaption = (stage: number | null, text: string) => {
+      stageEl.textContent = stage === null ? 'Ready' : `${String(stage + 1).padStart(2, '0')} · ${stages[stage].label}`;
+      captionEl.textContent = text;
+      steps.forEach((el, i) => {
+        el.classList.toggle('is-active', i === stage);
+        el.classList.toggle('is-passed', stage !== null && i < stage);
+        el.classList.remove('is-stopped');
+      });
+      labels.forEach((el, i) => el.classList.toggle('is-active', i === stage));
+    };
+
+    const resetGates = () => {
+      gates.forEach((gate) => {
+        gate.pivot.rotation.x = 0;
+        gate.bar.material = gateMats.idle;
+      });
+    };
+
+    const reset = () => {
+      state.stage = 0;
+      state.mode = 'idle';
+      state.timer = 0;
+      state.playing = false;
+      state.secondPass = false;
+      state.vehicleX = startX;
+      vehicle.position.set(startX, 0, laneZ);
+      vehicle.visible = true;
+      resetGates();
+      setOutcome(null, null);
+      setCaption(null, 'Press play or step through the gates. Each stop matches the outcome the engine recorded.');
+      steps.forEach((el) => el.classList.remove('is-active', 'is-passed', 'is-stopped'));
+      playBtn.textContent = 'Play';
+      stepBtn.disabled = false;
+      host?.render();
+    };
+
+    const currentStopAt = () => (state.scenario.replay && !state.secondPass ? null : state.scenario.stopAt);
+
+    const captionFor = (stage: number) => {
+      if (state.scenario.replay && !state.secondPass && stage === 5) {
+        return 'NEW_RESERVATION. The permit is reserved once, under its execution id. Now the same permit is submitted again.';
+      }
+      return state.scenario.captions[stage] ?? stages[stage].caption;
+    };
+
+    const beginDrive = () => {
+      state.mode = 'driving';
+      state.timer = 0;
+    };
+
+    const update = (dt: number) => {
+      const bob = host && !host.reduceMotion && state.mode === 'driving' ? Math.sin(performance.now() / 90) * 0.015 : 0;
+      vehicle.position.y = bob;
+
+      switch (state.mode) {
+        case 'driving': {
+          const goal = state.stage < stages.length ? gateStopX(state.stage) : endX;
+          state.vehicleX = Math.min(goal, state.vehicleX + speed * dt);
+          vehicle.position.x = state.vehicleX;
+          if (state.vehicleX >= goal) {
+            if (state.stage >= stages.length) {
+              state.mode = 'done';
+              finish();
+            } else {
+              state.mode = 'checking';
+              state.timer = 0;
+              setCaption(state.stage, captionFor(state.stage));
+            }
+          }
+          break;
+        }
+        case 'checking': {
+          state.timer += dt;
+          if (state.timer < (host?.reduceMotion ? 0 : 0.7)) break;
+          if (currentStopAt() === state.stage) {
+            state.mode = 'stopped';
+            gates[state.stage].bar.material = gateMats.stop;
+            steps[state.stage]?.classList.add('is-stopped');
+            const reason = state.scenario.reason ? ` · ${state.scenario.reason}` : '';
+            setOutcome(`${state.scenario.outcome}${reason}`, 'stop');
+            playBtn.textContent = 'Play';
+            state.playing = false;
+            stepBtn.disabled = true;
+          } else {
+            state.mode = 'lifting';
+            state.timer = 0;
+            gates[state.stage].bar.material = gateMats.pass;
+          }
+          break;
+        }
+        case 'lifting': {
+          state.timer += dt;
+          const t = host?.reduceMotion ? 1 : Math.min(1, state.timer / 0.5);
+          gates[state.stage].pivot.rotation.x = -1.35 * t;
+          if (t >= 1) {
+            state.stage += 1;
+            if (state.playing) beginDrive();
+            else state.mode = 'waiting';
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    };
+
+    const finish = () => {
+      if (state.scenario.replay && !state.secondPass) {
+        // First pass reserved and executed; now replay the same permit.
+        state.secondPass = true;
+        state.stage = 0;
+        state.vehicleX = startX;
+        vehicle.position.x = startX;
+        gates.forEach((gate) => {
+          gate.pivot.rotation.x = 0;
+          gate.bar.material = gateMats.idle;
+        });
+        setCaption(null, 'Retry: the same permit and execution id are submitted again.');
+        if (state.playing) beginDrive();
+        else state.mode = 'waiting';
+        return;
+      }
+      setOutcome(state.scenario.outcome, 'pass');
+      setCaption(stages.length - 1, 'The complete boundary was satisfied against current state. The side effect ran exactly once.');
+      playBtn.textContent = 'Play';
+      state.playing = false;
+      stepBtn.disabled = true;
+    };
+
+    const step = () => {
+      if (state.mode === 'stopped' || state.mode === 'done') return;
+      if (state.mode === 'idle' || state.mode === 'waiting') beginDrive();
+    };
+
+    const play = () => {
+      if (state.mode === 'stopped' || state.mode === 'done') reset();
+      state.playing = !state.playing;
+      playBtn.textContent = state.playing ? 'Pause' : 'Play';
+      if (state.playing && (state.mode === 'idle' || state.mode === 'waiting')) beginDrive();
+    };
+
+    const selectScenario = (id: string, focus = false) => {
+      const scenario = scenarios.find((s) => s.id === id);
+      if (!scenario) return;
+      state.scenario = scenario;
+      tabs.forEach((tab) => {
+        const selected = tab.dataset.cityScenario === id;
+        tab.setAttribute('aria-selected', String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+        if (selected && focus) tab.focus();
+      });
+      reset();
+    };
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => selectScenario(tab.dataset.cityScenario ?? ''));
+      tab.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
+          : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+        selectScenario(tabs[next].dataset.cityScenario ?? '', true);
+      });
+    });
+    playBtn.addEventListener('click', play);
+    stepBtn.addEventListener('click', step);
+    resetBtn.addEventListener('click', reset);
+
+    const onExternalSelect = (event: Event) => {
+      const id = (event as CustomEvent<string>).detail;
+      selectScenario(id);
+      root.scrollIntoView({ behavior: host?.reduceMotion ? 'auto' : 'smooth', block: 'center' });
+      window.setTimeout(() => { if (!state.playing) play(); }, 600);
+    };
+    root.addEventListener('city:select', onExternalSelect);
+
+    // Labels follow the buildings every frame while the scene is running, and once on setup.
+    const anchorScratch = new THREE.Vector3();
+    const placeLabels = () => {
+      if (!host) return;
+      buildingAnchors.forEach((anchor, i) => {
+        anchorScratch.copy(anchor).applyMatrix4(world.matrixWorld);
+        const { x, y } = host!.toScreen(anchorScratch);
+        labels[i].style.transform = `translate(-50%, -100%) translate(${x.toFixed(0)}px, ${y.toFixed(0)}px)`;
+      });
+    };
+
+    frameFn = (dt) => {
+      update(dt);
+      world.updateMatrixWorld();
+      placeLabels();
+    };
+    themeFn = applyTheme;
+
+    reset();
+    world.updateMatrixWorld();
+    placeLabels();
+    host.render();
+
+    return () => {
+      detachDrag();
+      root.removeEventListener('city:select', onExternalSelect);
+      host?.dispose();
+    };
+  }
+
+  async function init() {
+    const root = document.querySelector<HTMLElement>('[data-authorization-city]');
+    if (!root || root.dataset.ready === 'true') return;
+    root.dataset.ready = 'true';
+    active = await mount(root);
+  }
+
+  document.addEventListener('astro:before-swap', () => {
+    active?.();
+    active = null;
+  });
+
+  init();
+  document.addEventListener('astro:page-load', init);
+</script>

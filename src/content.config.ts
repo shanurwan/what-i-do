@@ -50,7 +50,7 @@ const writing = defineCollection({
     updated: z.coerce.date().optional(),
     tags: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
-    presentation: z.enum(['prose', 'evidence']).default('prose'),
+    presentation: z.enum(['prose', 'evidence', 'course']).default('prose'),
     canonicalUrl: z.url().optional(),
   }),
 });
