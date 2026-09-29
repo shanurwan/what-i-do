@@ -30,7 +30,9 @@ npm run preview  # serve the production build locally
 - `src/data/evidence/` contains validated, normalized evidence used by interactive article viewers.
 - `public/evidence/` contains the pinned raw artifacts those viewers reference.
 - `src/content.config.ts` defines and validates both content schemas.
-- `src/config/profile.ts` contains the display name and external profile/contact links.
+- `src/config/profile.ts` contains the display name, current role, availability line, and external profile/contact links.
+- `src/data/experience.ts` contains the experience timeline, capability areas, and working principles shown on the
+  home and About pages.
 
 ### Add a project
 
@@ -42,7 +44,7 @@ to include the project on the homepage, and use `order` to control display order
 
 Create a Markdown or MDX file in `src/content/writing/` with `title`, `slug`, `description`, `published`, `tags`, and
 `draft` frontmatter. Use MDX only when the article needs a repository component. Draft articles are visible in local
-development but are excluded from production routes, listings, RSS, and the sitemap. Change `draft` to `false` when
+development but are excluded from production routes, listings, and the sitemap. Change `draft` to `false` when
 the article is ready to publish.
 
 The “Authorization as Infrastructure” lab reads normalized records from `src/data/evidence/nest-authz.json`; its raw

@@ -1,4 +1,5 @@
 ---
+import { ClientRouter } from 'astro:transitions';
 import SiteFooter from '../components/SiteFooter.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import { profile } from '../config/profile';
@@ -27,7 +28,6 @@ const documentTitle = title
   ? `${title} — ${profile.displayName}`
   : `${profile.displayName} — ${profile.descriptor}`;
 const canonical = canonicalUrl ?? new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
-const rssUrl = new URL(withBase('rss.xml'), Astro.site ?? Astro.url.origin).toString();
 const socialImage = new URL(withBase('og-card.png'), Astro.site ?? Astro.url.origin).toString();
 ---
 
@@ -35,14 +35,20 @@ const socialImage = new URL(withBase('og-card.png'), Astro.site ?? Astro.url.ori
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#17382d" />
+    <meta name="theme-color" content="#0b0f0e" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f6f7f5" media="(prefers-color-scheme: light)" />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="icon" href={withBase('favicon.svg')} type="image/svg+xml" />
     <link rel="canonical" href={canonical} />
-    <link rel="alternate" type="application/rss+xml" title={`${profile.displayName} — Writing`} href={rssUrl} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    />
     <meta property="og:site_name" content={profile.displayName} />
     <meta property="og:title" content={documentTitle} />
     <meta property="og:description" content={description} />
@@ -51,13 +57,30 @@ const socialImage = new URL(withBase('og-card.png'), Astro.site ?? Astro.url.ori
     <meta property="og:image" content={socialImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Shanurwan — infrastructure at the reliability and security boundaries" />
+    <meta property="og:image:alt" content={`${profile.displayName} — ${profile.descriptor}`} />
     {published && <meta property="article:published_time" content={published.toISOString()} />}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={documentTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={socialImage} />
     <title>{documentTitle}</title>
+    <script is:inline>
+      (function () {
+        var KEY = 'theme';
+        function apply() {
+          var stored = null;
+          try { stored = localStorage.getItem(KEY); } catch (e) {}
+          if (stored === 'dark' || stored === 'light') {
+            document.documentElement.setAttribute('data-theme', stored);
+          } else {
+            document.documentElement.removeAttribute('data-theme');
+          }
+        }
+        apply();
+        document.addEventListener('astro:after-swap', apply);
+      })();
+    </script>
+    <ClientRouter />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -66,5 +89,84 @@ const socialImage = new URL(withBase('og-card.png'), Astro.site ?? Astro.url.ori
       <slot />
     </main>
     <SiteFooter />
+    <script>
+      const KEY = 'theme';
+
+      function currentTheme(): 'dark' | 'light' {
+        const explicit = document.documentElement.getAttribute('data-theme');
+        if (explicit === 'dark' || explicit === 'light') return explicit;
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+
+      function setupThemeToggle() {
+        document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]').forEach((button) => {
+          if (button.dataset.ready === 'true') return;
+          button.dataset.ready = 'true';
+          button.addEventListener('click', () => {
+            const next = currentTheme() === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            try { localStorage.setItem(KEY, next); } catch {}
+          });
+        });
+      }
+
+      function setupHeader() {
+        const header = document.querySelector<HTMLElement>('[data-site-header]');
+        if (!header) return;
+        const update = () => header.classList.toggle('is-scrolled', window.scrollY > 12);
+        update();
+        window.addEventListener('scroll', update, { passive: true });
+      }
+
+      function setupReveal() {
+        const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]:not(.is-visible)'));
+        if (targets.length === 0) return;
+        if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          targets.forEach((el) => el.classList.add('is-visible'));
+          return;
+        }
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          });
+        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+        targets.forEach((el) => observer.observe(el));
+      }
+
+      function setupTilt() {
+        const capable = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!capable || reduce) return;
+        document.querySelectorAll<HTMLElement>('[data-tilt]').forEach((card) => {
+          if (card.dataset.tiltReady === 'true') return;
+          card.dataset.tiltReady = 'true';
+          card.addEventListener('pointermove', (event) => {
+            const rect = card.getBoundingClientRect();
+            const px = (event.clientX - rect.left) / rect.width;
+            const py = (event.clientY - rect.top) / rect.height;
+            card.style.setProperty('--mx', `${(px * 100).toFixed(1)}%`);
+            card.style.setProperty('--my', `${(py * 100).toFixed(1)}%`);
+            card.style.setProperty('--ry', `${((px - 0.5) * 7).toFixed(2)}deg`);
+            card.style.setProperty('--rx', `${((0.5 - py) * 7).toFixed(2)}deg`);
+          });
+          card.addEventListener('pointerleave', () => {
+            card.style.removeProperty('--rx');
+            card.style.removeProperty('--ry');
+          });
+        });
+      }
+
+      function init() {
+        setupThemeToggle();
+        setupHeader();
+        setupReveal();
+        setupTilt();
+      }
+
+      init();
+      document.addEventListener('astro:page-load', init);
+    </script>
   </body>
 </html>

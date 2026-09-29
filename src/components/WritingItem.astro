@@ -15,8 +15,8 @@ const date = published.toLocaleDateString('en-GB', {
 });
 ---
 
-<li class="writing-item">
-  <div>
+<li class="writing-item" data-reveal>
+  <div class="writing-item__main">
     <h3>
       <a href={withBase(`writing/${slug}/`)}>{title}</a>
       {draft && <span class="draft-label">Draft</span>}
@@ -26,5 +26,6 @@ const date = published.toLocaleDateString('en-GB', {
   <div class="writing-item__meta">
     <time datetime={published.toISOString()}>{date}</time>
     {tags.length > 0 && <div>{tags.join(' · ')}</div>}
+    <span class="writing-item__arrow" aria-hidden="true">→</span>
   </div>
 </li>

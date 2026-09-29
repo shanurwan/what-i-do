@@ -1,9 +1,14 @@
 ---
 import { getCollection } from 'astro:content';
+import ContactCta from '../components/ContactCta.astro';
+import FailureExplorer from '../components/FailureExplorer.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import SectionHeading from '../components/SectionHeading.astro';
+import Ticker from '../components/Ticker.astro';
+import TopologyScene from '../components/TopologyScene.astro';
 import WritingItem from '../components/WritingItem.astro';
 import { profile } from '../config/profile';
+import { capabilities, principles } from '../data/experience';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { withBase } from '../utils/paths';
 
@@ -13,31 +18,100 @@ const projects = (await getCollection('projects'))
 const articles = (await getCollection('writing', ({ data }) => !data.draft))
   .sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf())
   .slice(0, 3);
+
+const tickerItems = [
+  'Kubernetes',
+  'Cloud platforms',
+  'Linux',
+  'Firecracker / KVM',
+  'Authorization',
+  'Threat modelling',
+  'Observability',
+  'Incident response',
+  'Capacity & cost',
+  'MLOps integration',
+  'Go',
+  'Python',
+  'Recovery engineering',
+];
 ---
 
-<BaseLayout description="Infrastructure and systems engineering across reliability, security, AI infrastructure, Linux, and distributed systems.">
-  <div class="shell">
-    <section class="hero" aria-labelledby="hero-title">
-      <div>
-        <h1 id="hero-title">I build and investigate infrastructure at its reliability and security boundaries.</h1>
-        <p class="hero__lede">
-          My work spans production infrastructure and independent systems engineering across AI infrastructure,
-          distributed systems, Linux, reliability, and security.
+<BaseLayout description="Infrastructure and security engineering for high-criticality AI systems: platform, authorization boundaries, isolation, uptime, and recovery, documented with evidence.">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero__backdrop" aria-hidden="true"></div>
+    <div class="shell hero__inner">
+      <div class="hero__copy">
+        <p class="hero__kicker" data-reveal>
+          <span class="hero__status"><i></i>{profile.role} · {profile.company}</span>
         </p>
+        <h1 id="hero-title" data-reveal style="--reveal-delay: 80ms">
+          I build high-integrity infrastructure for AI systems that must stay up.
+        </h1>
+        <p class="hero__lede" data-reveal style="--reveal-delay: 160ms">
+          Platform, security boundaries, and reliability for high-criticality AI workloads: what they run on, what
+          protects them, how they stay correct, and how they recover. Alongside that, I build reference systems that
+          make hard infrastructure behaviour inspectable.
+        </p>
+        <div class="hero__actions" data-reveal style="--reveal-delay: 240ms">
+          <a class="button button--primary" href={withBase('projects/')}>View case studies <span aria-hidden="true">→</span></a>
+          <a class="button" href={withBase('about/')}>About me</a>
+        </div>
+        <dl class="hero__facts" data-reveal style="--reveal-delay: 320ms">
+          <div><dt>Focus</dt><dd>High-criticality AI infrastructure</dd></div>
+          <div><dt>Based</dt><dd>{profile.location}</dd></div>
+          <div><dt>Method</dt><dd>Evidence-backed engineering</dd></div>
+        </dl>
       </div>
-      <div class="hero__aside" aria-label="Focus areas">
-        <span>Systems behaviour</span>
-        <span>Execution boundaries</span>
-        <span>Failure and recovery</span>
+      <div class="hero__panel" data-reveal style="--reveal-delay: 200ms">
+        <TopologyScene />
+      </div>
+    </div>
+  </section>
+
+  <Ticker items={tickerItems} />
+
+  <div class="shell">
+    <section class="section" aria-labelledby="capabilities-heading">
+      <SectionHeading
+        id="capabilities-heading"
+        label="01 / What I do"
+        title="Infrastructure for AI systems where downtime and wrong answers both count as failure."
+        description="Four areas of practice, each one measured by what the system does under load, under attack, and after failure."
+      />
+      <div class="capability-grid">
+        {capabilities.map((capability, index) => (
+          <article class="capability" data-reveal data-tilt style={`--reveal-delay: ${index * 80}ms`}>
+            <span class="capability__index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+            <h3>{capability.title}</h3>
+            <p>{capability.summary}</p>
+            <ul class="capability__points">
+              {capability.points.map((point) => <li>{point}</li>)}
+            </ul>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="failure-heading">
+      <SectionHeading
+        id="failure-heading"
+        label="02 / Under failure"
+        title="What the systems do when something goes wrong."
+        description="Pick a failure mode to see how it is detected, contained, and recorded. Every entry comes from behaviour documented in the project evidence."
+      />
+      <div data-reveal>
+        <FailureExplorer />
       </div>
     </section>
 
     <section class="section" aria-labelledby="work-heading">
       <SectionHeading
         id="work-heading"
-        label="01 / Selected work"
+        label="03 / Selected work"
         title="Systems built to make difficult infrastructure behaviour inspectable."
-        description="Case studies emphasise constraints, decisions, failure modes, and evidence—not product claims."
+        description="Case studies cover constraints, decisions, failure modes, and the evidence each claim rests on."
+        actionHref={withBase('projects/')}
+        actionLabel="All work"
       />
       <div class="project-grid">
         {projects.map((project, index) => <ProjectCard project={project} index={index} compact />)}
@@ -47,8 +121,10 @@ const articles = (await getCollection('writing', ({ data }) => !data.draft))
     <section class="section" aria-labelledby="writing-heading">
       <SectionHeading
         id="writing-heading"
-        label="02 / Selected writing"
+        label="04 / Writing"
         title="Notes on authorization, isolation, reliability, and recovery."
+        actionHref={withBase('writing/')}
+        actionLabel="Writing archive"
       />
       {articles.length > 0 ? (
         <ul class="writing-list">
@@ -57,28 +133,24 @@ const articles = (await getCollection('writing', ({ data }) => !data.draft))
       ) : (
         <p class="empty-state">No public articles yet. Drafts remain local until they are ready to publish.</p>
       )}
-      <a class="section-action" href={withBase('writing/')}>Writing archive →</a>
     </section>
 
-    <section class="section" aria-labelledby="context-heading">
-      <SectionHeading id="context-heading" label="03 / Context" title="Production practice, tested through deeper systems work." />
-      <div class="context-grid">
-        <div>
-          <p>
-            I work across AI infrastructure, DevOps, infrastructure security, and MLOps integration. That includes
-            Kubernetes and cloud platforms, observability, databases, reliability, and security. Independent projects
-            give me room to examine the boundaries underneath those systems: delegated authority, microVM isolation,
-            temporal behaviour, bare-metal Linux, and recovery.
-          </p>
-        </div>
-        <ul class="context-links" aria-label="Profile links">
-          <li><a href={profile.github} rel="me">GitHub <span aria-hidden="true">↗</span></a></li>
-          {profile.linkedin && <li><a href={profile.linkedin} rel="me">LinkedIn <span aria-hidden="true">↗</span></a></li>}
-          {profile.email && <li><a href={`mailto:${profile.email}`}>Email <span aria-hidden="true">↗</span></a></li>}
-          {profile.resume && <li><a href={profile.resume}>Résumé <span aria-hidden="true">↗</span></a></li>}
-          <li><a href={withBase('about/')}>About <span aria-hidden="true">→</span></a></li>
-        </ul>
+    <section class="section" aria-labelledby="principles-heading">
+      <SectionHeading
+        id="principles-heading"
+        label="05 / How I work"
+        title="Principles I hold the systems to."
+      />
+      <div class="principle-grid">
+        {principles.map((principle, index) => (
+          <article class="principle" data-reveal data-tilt style={`--reveal-delay: ${index * 80}ms`}>
+            <h3>{principle.title}</h3>
+            <p>{principle.body}</p>
+          </article>
+        ))}
       </div>
     </section>
+
+    <ContactCta />
   </div>
 </BaseLayout>

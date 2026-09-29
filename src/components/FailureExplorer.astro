@@ -1,0 +1,207 @@
+---
+/**
+ * Interactive walk-through of documented failure modes from the public projects.
+ * Each entry describes how the system detects, contains, and records the failure.
+ * Nothing executes in the browser; the content reflects recorded behaviour.
+ */
+interface FailureRow { key: string; state: string; note: string }
+interface FailureMode { id: string; title: string; source: string; summary: string; rows: FailureRow[] }
+
+const failures: FailureMode[] = [
+  {
+    id: 'revoked',
+    title: 'Authority revoked after approval',
+    source: 'NEST AuthZ',
+    summary: 'A request was approved by an allowed principal, but the governing grant was revoked before the side effect ran.',
+    rows: [
+      { key: 'detect', state: 'caught', note: 'execution-time revalidation recomputes delegation, revocation, binding, policy, and approval state' },
+      { key: 'contain', state: 'closed', note: 'no ExecutionPermit is issued; the approval receipt remains historical evidence, not a bearer token' },
+      { key: 'recover', state: 'none', note: 'nothing to roll back because the protected operation never started' },
+      { key: 'evidence', state: 'typed', note: 'the revalidation event records the revoked grant instead of a bare false' },
+    ],
+  },
+  {
+    id: 'replay',
+    title: 'Execution permit replayed',
+    source: 'NEST AuthZ',
+    summary: 'A retry re-submits a permit that already produced a reservation in the durable store.',
+    rows: [
+      { key: 'detect', state: 'caught', note: 'reservations are keyed by a deterministic execution identity derived from the permit' },
+      { key: 'contain', state: 'closed', note: 'the second attempt returns EXISTING_RESERVED rather than creating a new logical operation' },
+      { key: 'recover', state: 'durable', note: 'state survives store reopen, and a fresh store instance cannot bypass uniqueness' },
+      { key: 'evidence', state: 'typed', note: 'NEW_RESERVATION followed by EXISTING_RESERVED for the same execution id' },
+    ],
+  },
+  {
+    id: 'hash',
+    title: 'Image hash mismatch before boot',
+    source: 'Epoch',
+    summary: 'The local kernel or root filesystem no longer matches what the scenario declares.',
+    rows: [
+      { key: 'detect', state: 'caught', note: 'scenario and image hashes are compared against the declaration before anything is prepared' },
+      { key: 'contain', state: 'closed', note: 'the run stops before boot; no microVM starts and no guest time changes' },
+      { key: 'recover', state: 'none', note: 'no owned resources were created, so there is nothing to clean up' },
+      { key: 'evidence', state: 'recorded', note: 'the refusal is preserved as a run outcome rather than a silent skip' },
+    ],
+  },
+  {
+    id: 'cleanup',
+    title: 'Cleanup interrupted mid-run',
+    source: 'Epoch',
+    summary: 'The control plane is interrupted after boot and leaves microVM resources behind.',
+    rows: [
+      { key: 'detect', state: 'caught', note: 'recovery inspects by default and lists resources tied to a verified run owner' },
+      { key: 'contain', state: 'scoped', note: 'only resources bound to that owned run are eligible for removal; nothing else is touched' },
+      { key: 'recover', state: 'explicit', note: 'cleanup has its own outcome, separate from workload execution and assertions' },
+      { key: 'evidence', state: 'recorded', note: 'a failed cleanup does not erase what the workload actually did' },
+    ],
+  },
+  {
+    id: 'clock',
+    title: 'Guest clock moved forward 30 days',
+    source: 'Epoch',
+    summary: 'A scenario advances time to observe expiry and lease behaviour under test.',
+    rows: [
+      { key: 'detect', state: 'scoped', note: 'time changes are issued to the guest agent over authenticated vsock only' },
+      { key: 'contain', state: 'invariant', note: 'the host clock and its time synchronization are never changed' },
+      { key: 'recover', state: 'disposable', note: 'the microVM is discarded afterwards; the host needs no correction' },
+      { key: 'evidence', state: 'typed', note: 'observations from inside the guest are evaluated against declared assertions' },
+    ],
+  },
+];
+---
+
+<div class="failure-explorer" data-failure-explorer>
+  <div class="failure-explorer__list" role="tablist" aria-label="Failure modes">
+    {failures.map((failure, index) => (
+      <button
+        type="button"
+        role="tab"
+        class="failure-explorer__tab"
+        id={`failure-${failure.id}-tab`}
+        aria-controls="failure-panel"
+        aria-selected={index === 0 ? 'true' : 'false'}
+        tabindex={index === 0 ? 0 : -1}
+        data-failure-id={failure.id}
+      >
+        <span class="failure-explorer__tab-source">{failure.source}</span>
+        <span class="failure-explorer__tab-title">{failure.title}</span>
+        <span class="failure-explorer__tab-arrow" aria-hidden="true">→</span>
+      </button>
+    ))}
+  </div>
+
+  <div class="console failure-explorer__panel" id="failure-panel" role="tabpanel" aria-labelledby={`failure-${failures[0].id}-tab`} aria-live="polite">
+    <div class="console__bar">
+      <span class="console__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="console__title" data-failure-title>{failures[0].source} · {failures[0].title}</span>
+      <span class="console__status" aria-hidden="true"><i class="console__pulse"></i>recorded</span>
+    </div>
+    <div class="console__body">
+      <p class="failure-explorer__summary" data-failure-summary>{failures[0].summary}</p>
+      <ol class="console__rows" data-failure-rows>
+        {failures[0].rows.map((row) => (
+          <li class="console__row is-shown">
+            <span class="console__key">{row.key}</span>
+            <span class="console__state" data-state={row.state}>{row.state}</span>
+            <span class="console__note">{row.note}</span>
+          </li>
+        ))}
+      </ol>
+      <div class="console__foot">
+        <span class="console__cursor" aria-hidden="true">›</span>
+        <span>behaviour as documented in the project evidence · nothing runs in the browser</span>
+      </div>
+    </div>
+  </div>
+  <script type="application/json" data-failure-data set:html={JSON.stringify(failures)} />
+</div>
+
+<script>
+  interface FailureRow { key: string; state: string; note: string }
+  interface FailureMode { id: string; title: string; source: string; summary: string; rows: FailureRow[] }
+
+  function setupExplorer(root: HTMLElement) {
+    if (root.dataset.ready === 'true') return;
+    root.dataset.ready = 'true';
+
+    const source = root.querySelector<HTMLScriptElement>('[data-failure-data]');
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const panel = root.querySelector<HTMLElement>('.failure-explorer__panel');
+    const titleEl = root.querySelector<HTMLElement>('[data-failure-title]');
+    const summaryEl = root.querySelector<HTMLElement>('[data-failure-summary]');
+    const rowsEl = root.querySelector<HTMLElement>('[data-failure-rows]');
+    if (!source || !panel || !titleEl || !summaryEl || !rowsEl) return;
+
+    const failures: FailureMode[] = JSON.parse(source.textContent ?? '[]');
+    const byId = new Map(failures.map((failure) => [failure.id, failure]));
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const render = (failure: FailureMode) => {
+      titleEl.textContent = `${failure.source} · ${failure.title}`;
+      summaryEl.textContent = failure.summary;
+      rowsEl.replaceChildren(
+        ...failure.rows.map((row, i) => {
+          const li = document.createElement('li');
+          li.className = 'console__row';
+          li.style.setProperty('--row-delay', `${i * 120}ms`);
+          const key = document.createElement('span');
+          key.className = 'console__key';
+          key.textContent = row.key;
+          const state = document.createElement('span');
+          state.className = 'console__state';
+          state.dataset.state = row.state;
+          state.textContent = row.state;
+          const note = document.createElement('span');
+          note.className = 'console__note';
+          note.textContent = row.note;
+          li.append(key, state, note);
+          return li;
+        }),
+      );
+      requestAnimationFrame(() => {
+        rowsEl.querySelectorAll('.console__row').forEach((row) => row.classList.add('is-shown'));
+      });
+    };
+
+    const select = (tab: HTMLButtonElement, focus = false) => {
+      const failure = byId.get(tab.dataset.failureId ?? '');
+      if (!failure) return;
+      tabs.forEach((candidate) => {
+        const selected = candidate === tab;
+        candidate.setAttribute('aria-selected', String(selected));
+        candidate.tabIndex = selected ? 0 : -1;
+      });
+      panel.setAttribute('aria-labelledby', tab.id);
+      if (focus) tab.focus();
+
+      if (reduceMotion) {
+        render(failure);
+        return;
+      }
+      panel.classList.add('is-switching');
+      window.setTimeout(() => {
+        render(failure);
+        panel.classList.remove('is-switching');
+      }, 220);
+    };
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => select(tab));
+      tab.addEventListener('keydown', (event) => {
+        if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const target = event.key === 'Home'
+          ? 0
+          : event.key === 'End'
+            ? tabs.length - 1
+            : (index + (event.key === 'ArrowDown' ? 1 : -1) + tabs.length) % tabs.length;
+        select(tabs[target], true);
+      });
+    });
+  }
+
+  const init = () => document.querySelectorAll<HTMLElement>('[data-failure-explorer]').forEach(setupExplorer);
+  init();
+  document.addEventListener('astro:page-load', init);
+</script>

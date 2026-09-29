@@ -2,7 +2,6 @@
 import { getCollection } from 'astro:content';
 import WritingItem from '../../components/WritingItem.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { withBase } from '../../utils/paths';
 
 const articles = (await getCollection('writing', ({ data }) => import.meta.env.DEV || !data.draft))
   .sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf());
@@ -11,20 +10,19 @@ const articles = (await getCollection('writing', ({ data }) => import.meta.env.D
 <BaseLayout title="Writing" description="Technical writing on infrastructure, authorization, reliability, isolation, and recovery.">
   <div class="shell">
     <header class="page-header">
-      <p class="eyebrow">Writing / Technical notes</p>
-      <h1>Reasoning about systems in the open.</h1>
-      <p class="page-header__lede">
-        Technical notes on infrastructure behaviour, security boundaries, testing, and recovery. Drafts appear during
-        local development only.
+      <p class="eyebrow" data-reveal>Writing / Technical notes</p>
+      <h1 data-reveal style="--reveal-delay: 80ms">Reasoning about systems in the open.</h1>
+      <p class="page-header__lede" data-reveal style="--reveal-delay: 160ms">
+        Technical notes on infrastructure behaviour, security boundaries, testing, and recovery. Each article is
+        backed by pinned, reproducible evidence.
       </p>
     </header>
-    <section class="section" aria-label="Writing archive">
+    <section class="section section--flush" aria-label="Writing archive">
       {articles.length > 0 ? (
         <ul class="writing-list">{articles.map((article) => <WritingItem article={article} />)}</ul>
       ) : (
         <p class="empty-state">No public articles yet. The writing system is ready for the first published note.</p>
       )}
-      <a class="section-action" href={withBase('rss.xml')}>RSS feed →</a>
     </section>
   </div>
 </BaseLayout>

@@ -1,12 +1,26 @@
 ---
 import { profile } from '../config/profile';
+import { withBase } from '../utils/paths';
 
 const year = new Date().getFullYear();
 ---
 
 <footer class="site-footer">
   <div class="site-footer__inner shell">
-    <span>© {year} {profile.displayName}</span>
-    <span>Built as a static Astro site</span>
+    <div class="site-footer__brand">
+      <span class="site-footer__name">{profile.displayName}</span>
+      <span class="site-footer__descriptor">{profile.descriptor}</span>
+    </div>
+    <nav class="site-footer__nav" aria-label="Footer navigation">
+      <a href={withBase('projects/')}>Work</a>
+      <a href={withBase('writing/')}>Writing</a>
+      <a href={withBase('about/')}>About</a>
+      <a href={profile.github} rel="me">GitHub</a>
+      {profile.linkedin && <a href={profile.linkedin} rel="me">LinkedIn</a>}
+    </nav>
+    <div class="site-footer__meta">
+      <span>© {year} {profile.displayName}</span>
+      <span>Static site · Astro · GitHub Pages</span>
+    </div>
   </div>
 </footer>

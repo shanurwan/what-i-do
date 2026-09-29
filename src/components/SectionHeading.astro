@@ -4,15 +4,22 @@ interface Props {
   label: string;
   title: string;
   description?: string;
+  actionHref?: string;
+  actionLabel?: string;
 }
 
-const { id, label, title, description } = Astro.props;
+const { id, label, title, description, actionHref, actionLabel } = Astro.props;
 ---
 
-<div class="section-heading">
+<div class="section-heading" data-reveal>
   <p class="section-heading__label">{label}</p>
-  <div>
+  <div class="section-heading__main">
     <h2 id={id}>{title}</h2>
     {description && <p class="section-heading__description">{description}</p>}
   </div>
+  {actionHref && actionLabel && (
+    <a class="section-heading__action" href={actionHref}>
+      {actionLabel} <span aria-hidden="true">→</span>
+    </a>
+  )}
 </div>

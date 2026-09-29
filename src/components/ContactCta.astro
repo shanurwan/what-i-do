@@ -1,0 +1,40 @@
+---
+import { profile } from '../config/profile';
+import { withBase } from '../utils/paths';
+
+interface Props {
+  title?: string;
+  body?: string;
+  showAbout?: boolean;
+}
+
+const {
+  title = 'Let’s talk about the systems that cannot afford to fail.',
+  body = profile.availability,
+  showAbout = true,
+} = Astro.props;
+
+const phoneHref = profile.phone ? `tel:${profile.phone.replace(/[^+\d]/g, '')}` : undefined;
+---
+
+<section class="cta" aria-labelledby="cta-title" data-reveal>
+  <div class="cta__inner">
+    <div>
+      <p class="eyebrow">Get in touch</p>
+      <h2 id="cta-title">{title}</h2>
+      <p class="cta__body">{body}</p>
+      <ul class="cta__contact" aria-label="Contact details">
+        {profile.email && <li><span>Email</span><a href={`mailto:${profile.email}`}>{profile.email}</a></li>}
+        {profile.phone && phoneHref && <li><span>Phone</span><a href={phoneHref}>{profile.phone}</a></li>}
+        <li><span>Based</span>{profile.location}</li>
+      </ul>
+    </div>
+    <div class="cta__actions">
+      {profile.email && <a class="button button--primary" href={`mailto:${profile.email}`}>Email me</a>}
+      {profile.linkedin && <a class="button" href={profile.linkedin} rel="me">LinkedIn <span aria-hidden="true">↗</span></a>}
+      <a class:list={['button', { 'button--primary': !profile.email }]} href={profile.github} rel="me">GitHub <span aria-hidden="true">↗</span></a>
+      {profile.resume && <a class="button" href={profile.resume}>Résumé <span aria-hidden="true">↗</span></a>}
+      {showAbout && <a class="button button--ghost" href={withBase('about/')}>About me <span aria-hidden="true">→</span></a>}
+    </div>
+  </div>
+</section>

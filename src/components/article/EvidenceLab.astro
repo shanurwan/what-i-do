@@ -169,7 +169,9 @@ const generatedDate = new Date(evidence.provenance.generatedAt).toLocaleString('
 </aside>
 
 <script>
-  document.querySelectorAll<HTMLElement>('[data-evidence-switcher]').forEach((switcher) => {
+  function setupSwitcher(switcher: HTMLElement) {
+    if (switcher.dataset.ready === 'true') return;
+    switcher.dataset.ready = 'true';
     const tabs = Array.from(switcher.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
     const panels = Array.from(switcher.querySelectorAll<HTMLElement>('[role="tabpanel"]'));
 
@@ -198,5 +200,9 @@ const generatedDate = new Date(evidence.provenance.generatedAt).toLocaleString('
         tabs[targetIndex].focus();
       });
     });
-  });
+  }
+
+  const init = () => document.querySelectorAll<HTMLElement>('[data-evidence-switcher]').forEach(setupSwitcher);
+  init();
+  document.addEventListener('astro:page-load', init);
 </script>

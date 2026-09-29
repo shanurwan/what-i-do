@@ -9,24 +9,28 @@ interface Props {
 }
 
 const { project, index, compact = false } = Astro.props;
-const { title, slug, summary, status, year, areas } = project.data;
+const { title, slug, summary, status, year, areas, problem } = project.data;
 ---
 
-<article class:list={['project-card', { 'project-card--compact': compact }]}>
-  {!compact && <span class="project-card__number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>}
-  <div>
-    {!compact && (
-      <ul class="project-card__meta" aria-label="Project metadata">
-        <li>{status}</li>
-        {year && <li>{year}</li>}
-      </ul>
-    )}
+<article class:list={['project-card', { 'project-card--compact': compact }]} data-reveal data-tilt style={`--reveal-delay: ${index * 90}ms`}>
+  <div class="project-card__top">
+    <span class="project-card__number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+    <ul class="project-card__meta" aria-label="Project metadata">
+      <li>{status}</li>
+      {year && <li>{year}</li>}
+    </ul>
+  </div>
+  <div class="project-card__body">
     <h3><a href={withBase(`projects/${slug}/`)}>{title}</a></h3>
     <p class="project-card__summary">{summary}</p>
-    {!compact && areas.length > 0 && (
+    {!compact && problem && <p class="project-card__problem">{problem}</p>}
+  </div>
+  <div class="project-card__bottom">
+    {areas.length > 0 && (
       <ul class="tag-list" aria-label="Project areas">
         {areas.slice(0, 4).map((area) => <li>{area}</li>)}
       </ul>
     )}
+    <span class="project-card__cta" aria-hidden="true">Read case study <span class="project-card__arrow">→</span></span>
   </div>
 </article>
