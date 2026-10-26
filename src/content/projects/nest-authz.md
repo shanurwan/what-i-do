@@ -11,7 +11,7 @@ areas:
   - Security semantics
   - Audit evidence
 featured: true
-order: 1
+order: 3
 problem: Authentication can identify the subject presenting a request, but it does not prove that the subject remains authorized to perform a specific action on a specific resource at execution time.
 context: NEST AuthZ explores delegated authority as explicit, typed data. It keeps authority provenance, policy evaluation, approval, revalidation, and execution reservation separate so each boundary can be reasoned about and tested.
 constraints:

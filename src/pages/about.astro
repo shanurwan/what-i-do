@@ -27,11 +27,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           system keeps running and keeps giving correct answers under pressure, not just in a design review.
         </p>
         <p>
-          The work that shaped how I think happens below the usual abstractions. In NEST AuthZ I modelled delegated
-          authority as typed data so approval, revalidation, and execution stay separate and fail closed. In Epoch I
-          moved time inside Firecracker microVMs on bare-metal KVM so expiry and scheduling logic can be tested without
-          touching the host clock. Both projects ship with threat models, invariants, and pinned evidence rather than
-          claims.
+          Outside work I build open-source agent systems that test where autonomy breaks. In RecoveryPact two AI
+          agents negotiate a database recovery while deterministic code alone grants execution; it made 24 of 24
+          correct decisions on a live PostgreSQL benchmark with 0 unsafe actions under red teaming. AegisSRE splits
+          Kubernetes reliability work across agents on A2A and MCP, with signed, short-lived grants for every change.
+          NEST AuthZ models delegated authority as typed data and plugs into Project NANDA’s Nanda Town, and Epoch
+          moves time inside Firecracker microVMs to test expiry logic. Each ships with a threat model and evidence
+          you can re-run.
         </p>
         <p>
           I care about boundaries: who holds authority, what a component is allowed to assume, what happens when a
@@ -45,7 +47,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <div><dt>Role</dt><dd>{profile.role}</dd></div>
           <div><dt>Company</dt><dd>{profile.company}</dd></div>
           <div><dt>Based</dt><dd>{profile.location}</dd></div>
-          <div><dt>Focus</dt><dd>High-criticality AI platforms, security boundaries, uptime</dd></div>
+          <div><dt>Focus</dt><dd>AI agent security, platform infrastructure, reliability</dd></div>
           {profile.email && <div><dt>Email</dt><dd><a href={`mailto:${profile.email}`}>{profile.email}</a></dd></div>}
           {profile.phone && <div><dt>Phone</dt><dd><a href={`tel:${profile.phone.replace(/[^+\d]/g, '')}`}>{profile.phone}</a></dd></div>}
           <div><dt>Status</dt><dd>{profile.availability}</dd></div>

@@ -3541,3 +3541,31 @@ main {
     transition: none;
   }
 }
+
+/* Hero proof metrics */
+
+.hero__facts--proof {
+  max-width: 40rem;
+}
+
+.hero__facts--proof dd:not(.hero__facts-note) {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.hero__facts--proof .hero__facts-note {
+  margin: 0.25rem 0 0;
+  font-weight: 400;
+  letter-spacing: normal;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .hero__facts--proof {
+    grid-template-columns: 1fr;
+  }
+}

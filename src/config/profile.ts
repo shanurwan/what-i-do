@@ -16,12 +16,12 @@ export interface Profile {
 
 export const profile: Profile = {
   displayName: 'Shanurwan',
-  name: 'Shafiqah',
-  descriptor: 'Infrastructure & security for high-integrity AI systems',
+  name: 'Wan Nur Shafiqah',
+  descriptor: 'AI infrastructure & security engineer',
   role: 'Specialist, Infrastructure & Security for AI',
   company: 'Scicom',
-  location: 'Malaysia',
-  availability: 'Open to infrastructure, platform, and security engineering roles on high-criticality systems: the ones that must stay up, stay correct, and prove it.',
+  location: 'Malaysia (UTC+8)',
+  availability: 'Open to fully remote AI infrastructure, platform, and security engineering roles, APAC or global, from January 2027.',
   github: 'https://github.com/shanurwan',
   linkedin: 'https://www.linkedin.com/in/wan-nur-shafiqah-852636223',
   email: 'wannurshafiqah18@gmail.com',

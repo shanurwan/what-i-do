@@ -11,7 +11,7 @@ areas:
   - Linux
   - Temporal testing
 featured: true
-order: 2
+order: 4
 problem: Software that depends on wall-clock time is difficult to test reproducibly when moving the host clock would disrupt the machine, its services, and time synchronization.
 context: Epoch is a general temporal testing system for expiry, scheduling, batch, lease, credential, and retention behaviour. Agent authority expiry is one reference workload, not the boundary of the platform.
 constraints:

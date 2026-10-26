@@ -21,17 +21,18 @@ const articles = (await getCollection('writing', ({ data }) => !data.draft))
 
 const tickerItems = [
   'Kubernetes',
-  'Cloud platforms',
-  'Linux',
-  'Firecracker / KVM',
-  'Authorization',
-  'Threat modelling',
-  'Observability',
-  'Incident response',
-  'Capacity & cost',
-  'MLOps integration',
+  'Azure',
   'Go',
   'Python',
+  'A2A Protocol',
+  'Model Context Protocol',
+  'PostgreSQL',
+  'Ed25519 delegation',
+  'mTLS',
+  'OpenTelemetry',
+  'Firecracker / KVM',
+  'Threat modelling',
+  'AI red teaming',
   'Recovery engineering',
 ];
 ---
@@ -45,21 +46,22 @@ const tickerItems = [
           <span class="hero__status"><i></i>{profile.role} · {profile.company}</span>
         </p>
         <h1 id="hero-title" data-reveal style="--reveal-delay: 80ms">
-          I build high-integrity infrastructure for AI systems that must stay up.
+          I build the guardrails that let AI agents touch production safely.
         </h1>
         <p class="hero__lede" data-reveal style="--reveal-delay: 160ms">
-          Platform, security boundaries, and reliability for high-criticality AI workloads: what they run on, what
-          protects them, how they stay correct, and how they recover. Alongside that, I build reference systems that
-          make hard infrastructure behaviour inspectable.
+          I’m {profile.name}, an AI infrastructure and security engineer. I run the platform and security boundaries
+          for production AI workloads, and I build open-source agent systems on A2A and MCP where every action needs
+          signed, bounded authority and every result can be replayed from evidence.
         </p>
         <div class="hero__actions" data-reveal style="--reveal-delay: 240ms">
-          <a class="button button--primary" href={withBase('projects/')}>View case studies <span aria-hidden="true">→</span></a>
-          <a class="button" href={withBase('about/')}>About me</a>
+          <a class="button button--primary" href={withBase('projects/recovery-pact/')}>See the flagship <span aria-hidden="true">→</span></a>
+          <a class="button" href="https://recovery-pact.wnswaz.win">Live demo <span aria-hidden="true">↗</span></a>
+          {profile.email && <a class="button button--ghost" href={`mailto:${profile.email}`}>Hire me</a>}
         </div>
-        <dl class="hero__facts" data-reveal style="--reveal-delay: 320ms">
-          <div><dt>Focus</dt><dd>High-criticality AI infrastructure</dd></div>
-          <div><dt>Based</dt><dd>{profile.location}</dd></div>
-          <div><dt>Method</dt><dd>Evidence-backed engineering</dd></div>
+        <dl class="hero__facts hero__facts--proof" data-reveal style="--reveal-delay: 320ms">
+          <div><dt>Recovery decisions</dt><dd>24 / 24</dd><dd class="hero__facts-note">correct on a live PostgreSQL benchmark</dd></div>
+          <div><dt>Unsafe actions</dt><dd>0</dd><dd class="hero__facts-note">in 45 red-team runs and 120 model-family incidents</dd></div>
+          <div><dt>Open-source systems</dt><dd>6</dd><dd class="hero__facts-note">in Go and Python, all public on GitHub</dd></div>
         </dl>
       </div>
       <div class="hero__panel" data-reveal style="--reveal-delay: 200ms">
